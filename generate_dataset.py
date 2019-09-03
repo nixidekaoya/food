@@ -43,6 +43,7 @@ for index,r in df.iterrows():
     output_array = np.zeros(output_dim)
     output_array[int(r["BListSelectID"])] = 1
     output_matrix.append(output_array)
+    print(sum(input_array))
     
 
 print(np.array(input_matrix).shape)
