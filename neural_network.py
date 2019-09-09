@@ -35,7 +35,7 @@ class Attention_Net(nn.Module):
         self.query_dim = int(params[0])
         self.key_dim = int(params[1])
         self.feature_dim = int(params[2])
-        self.linear_layer1 = nn.Linear(self.item_number, self.query_dim)
+        self.linear_layer1 = nn.Linear(self.input_dim, self.query_dim)
 
         if activation == "sigmoid":
             self.act = nn.Sigmoid()
