@@ -34,9 +34,14 @@ from datasets import FoodDataset
 ########################### FUNCTIONS
 
 def match_output(output,label):
-    print(output)
-    print(label)
-    return 0
+
+    #print(torch.max(output).item())
+    #print(output[0].dot(label[0]).item())
+    if torch.max(output).item() == output[0].dot(label[0]).item():
+        return 1
+    else:
+        return 0
+    
     
 
 ########################### PARAMS
@@ -76,7 +81,7 @@ if __name__ == '__main__':
     ############### Data Preparation ##############
     username = "li_mofei"
 
-    extra = "Data_200_Epoch_" + str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD)
+    extra = "Data_200_Epoch_" + str(DATE) + str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD)
     model_path = "/home/li/food/model/" + str(extra) + ".model"
     train_log_path = "/home/li/food/model/train_log/" + str(extra) + ".txt"
 
@@ -181,14 +186,14 @@ if __name__ == '__main__':
                 out,dist_origin = net.forward(im)
                 for dist in dist_origin:
                     valid_dist_list.append(list(dist.detach().numpy()))
-                output_array = list(out.detach().numpy)
+                output_array = list(out.detach().numpy())
                 test_output_list.append(output_array)
-                accurate_num += match_output(out,label)
+                accurate_number += match_output(out,label)
 
             mse_loss = loss_function(out, label)
             test_loss_list_each_epoch.append(mse_loss.item())
 
-        accurate_rate = float(accurate_num)/ valid_data_num
+        accurate_rate = float(accurate_number)/ valid_data_num
         test_accurate_rate_list.append(accurate_rate)
 
         train_loss = np.mean(train_loss_list_each_epoch)
@@ -200,10 +205,15 @@ if __name__ == '__main__':
 
 
         info1 = "Epoch: " + str(epoch) + " , Train Loss: " + str(train_loss)
+        info2 = "Epoch: " + str(epoch) + " , Test Loss: " + str(test_loss)
         print(info1)
+        print(info2)
         if NET == ATTENTION:
             info3 = "Epoch: " + str(epoch) + " , Distribution: " + str(dist_origin)
         print(info3)
+        info4 = "Epoch: " + str(epoch) + " , Accurate Rate: " + str(accurate_rate)
+        print(info4)
+
 
     print(model_path)
     torch.save(net.state_dict(), model_path)
@@ -261,7 +271,9 @@ if __name__ == '__main__':
 
     with open(train_log_path,"w") as log_f:
         log_f.write(info1 + "\r\n")
+        log_f.write(info2 + "\r\n")
         log_f.write(info3 + "\r\n")
+        log_f.write(info4 + "\r\n")
         log_f.write("Variance Ratio Train:" + str(pca.explained_variance_ratio_) + "\r\n")
         log_f.write("Variance Ratio Test:" + str(pca_valid.explained_variance_ratio_) + "\r\n")
         
