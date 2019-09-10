@@ -69,7 +69,7 @@ KEY_DIM = 6
 FEATURE_DIM = 5
 EPOCH = 20000
 MOMENTUM = 0.9
-REG = L0
+REG = L1
 ACT = SIGMOID
 OPTIMIZER = SGD
 BETAS = (0.9,0.999)
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     ############### Data Preparation ##############
     username = "li_mofei"
 
-    extra = "Data_200_Epoch_" + str(DATE) + str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD)
+    extra = "Data_200_Epoch_" + str(DATE) + "_" + str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD)
     model_path = "/home/li/food/model/" + str(extra) + ".model"
     train_log_path = "/home/li/food/model/train_log/" + str(extra) + ".txt"
 
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     figure = "Accurate_Rate_Curve" 
     plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
     #plt.plot(range(len(train_loss_list)), train_loss_list, label = "train loss")
-    plt.plot(range(len(test_accurate_rate_list)), test_accurate_rate_list, label = "log train loss")
+    plt.plot(range(len(test_accurate_rate_list)), test_accurate_rate_list, label = "Accurate Rate")
     plt.legend(loc = "upper right")
     plt.savefig(plt_file)
     plt.close('all')
