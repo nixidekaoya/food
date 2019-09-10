@@ -67,9 +67,9 @@ WEIGHT_DECAY = torch.tensor(0.000001).float()
 QUERY_DIM = 9
 KEY_DIM = 6
 FEATURE_DIM = 5
-EPOCH = 20000
+EPOCH = 5000
 MOMENTUM = 0.9
-REG = L1
+REG = L0
 ACT = SIGMOID
 OPTIMIZER = SGD
 BETAS = (0.9,0.999)
@@ -81,12 +81,12 @@ if __name__ == '__main__':
     ############### Data Preparation ##############
     username = "li_mofei"
 
-    extra = "Data_200_Epoch_" + str(DATE) + "_" + str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD)
+    extra = "Data_500_Epoch_" + str(DATE) + "_" + str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD)
     model_path = "/home/li/food/model/" + str(extra) + ".model"
     train_log_path = "/home/li/food/model/train_log/" + str(extra) + ".txt"
 
-    input_csv = "/home/li/food/data/20190903_limofei_200_input.csv"
-    output_csv = "/home/li/food/data/20190903_limofei_200_output.csv"
+    input_csv = "/home/li/food/data/20190910_limofei_500_input.csv"
+    output_csv = "/home/li/food/data/20190910_limofei_500_output.csv"
 
     valid_input_csv = "/home/li/food/data/20190903_limofei_100_input_validation.csv"
     valid_output_csv = "/home/li/food/data/20190903_limofei_100_output_validation.csv"
@@ -155,7 +155,7 @@ if __name__ == '__main__':
             l2_regularization = torch.tensor(0).float()
 
             if NET == ATTENTION:
-                out,dist_origin = net.forward(im)
+                out,dist_origin = net.forward(im,mode="train")
                 for dist in dist_origin:
                     dist_list.append(list(dist.detach().numpy()))
             elif NET == LINEAR:
@@ -183,7 +183,7 @@ if __name__ == '__main__':
 
         for im,label in valid_dataloader:
             if NET == ATTENTION:
-                out,dist_origin = net.forward(im)
+                out,dist_origin = net.forward(im,mode="valid")
                 for dist in dist_origin:
                     valid_dist_list.append(list(dist.detach().numpy()))
                 output_array = list(out.detach().numpy())
@@ -251,6 +251,8 @@ if __name__ == '__main__':
     plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
     plt.scatter(feature[:,0], feature[:,1])
     plt.grid()
+    plt.xlim(-1,1)
+    plt.ylim(-1,1)
     plt.savefig(plt_file)
     plt.close('all')
 
@@ -263,6 +265,8 @@ if __name__ == '__main__':
     plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
     plt.scatter(valid_feature[:,0], valid_feature[:,1])
     plt.grid()
+    plt.xlim(-1,1)
+    plt.ylim(-1,1)
     plt.savefig(plt_file)
     plt.close('all')
 
