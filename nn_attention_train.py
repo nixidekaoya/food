@@ -33,6 +33,12 @@ from datasets import FoodDataset
 
 ########################### FUNCTIONS
 
+def match_output(output,label):
+    print(output)
+    print(label)
+    return 0
+    
+
 ########################### PARAMS
 #Constant
 ADAM = "Adam"
@@ -46,7 +52,7 @@ ATTENTION = "attention_net"
 RELU = "relu"
 SIGMOID = "sigmoid"
 
-DATE = "20190906"
+DATE = "201909010"
 
 ## TRAIN PARAMS
 NET = ATTENTION
@@ -77,7 +83,12 @@ if __name__ == '__main__':
     input_csv = "/home/li/food/data/20190903_limofei_200_input.csv"
     output_csv = "/home/li/food/data/20190903_limofei_200_output.csv"
 
+    valid_input_csv = "/home/li/food/data/20190903_limofei_100_input_validation.csv"
+    valid_output_csv = "/home/li/food/data/20190903_limofei_100_output_validation.csv"
+
     dataset = FoodDataset(input_csv,output_csv)
+
+    valid_dataset = FoodDataset(valid_input_csv, valid_output_csv)
 
     plot_path = "/home/li/food/plot/" + str(DATE) + "/"
 
@@ -85,11 +96,18 @@ if __name__ == '__main__':
         os.mkdir(plot_path)
 
     data_num = dataset.data_num
+    valid_data_num = valid_dataset.data_num
 
     dataloader = DataLoader(dataset = dataset,
                             batch_size = BATCH_SIZE,
                             shuffle = True,
                             num_workers = 0)
+
+
+    valid_dataloader = DataLoader(dataset = valid_dataset,
+                                  batch_size = 1,
+                                  shuffle = True,
+                                  num_workers = 0)
 
     params = (QUERY_DIM,KEY_DIM,FEATURE_DIM)
 
@@ -105,19 +123,26 @@ if __name__ == '__main__':
         optimizer = torch.optim.Adam(net.parameters(), lr = LEARNING_RATE, betas = BETAS)
 
     ## LOSS
-
     loss_function = torch.nn.MSELoss()
 
     ########## TRAINING
     train_loss_list = []
     train_loss_log_list = []
+    test_loss_list = []
+    test_loss_log_list = []
+    test_accurate_rate_list = []
+    
 
     for epoch in range(EPOCH):
         net.train()
         dist_list = []
+        valid_dist_list = []
+        test_output_list = []
+        accurate_number = 0
         
 
         train_loss_list_each_epoch = []
+        test_loss_list_each_epoch = []
 
         for im,label in dataloader:
             l0_regularization = torch.tensor(0).float()
@@ -151,10 +176,27 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
 
+        for im,label in valid_dataloader:
+            if NET == ATTENTION:
+                out,dist_origin = net.forward(im)
+                for dist in dist_origin:
+                    valid_dist_list.append(list(dist.detach().numpy()))
+                output_array = list(out.detach().numpy)
+                test_output_list.append(output_array)
+                accurate_num += match_output(out,label)
+
+            mse_loss = loss_function(out, label)
+            test_loss_list_each_epoch.append(mse_loss.item())
+
+        accurate_rate = float(accurate_num)/ valid_data_num
+        test_accurate_rate_list.append(accurate_rate)
 
         train_loss = np.mean(train_loss_list_each_epoch)
         train_loss_list.append(train_loss)
         train_loss_log_list.append(math.log(train_loss))
+        test_loss = np.mean(test_loss_list_each_epoch)
+        test_loss_list.append(test_loss)
+        test_loss_log_list.append(math.log(test_loss))
 
 
         info1 = "Epoch: " + str(epoch) + " , Train Loss: " + str(train_loss)
@@ -173,6 +215,16 @@ if __name__ == '__main__':
     plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
     #plt.plot(range(len(train_loss_list)), train_loss_list, label = "train loss")
     plt.plot(range(len(train_loss_log_list)), train_loss_log_list, label = "log train loss")
+    plt.plot(range(len(test_loss_log_list)), test_loss_log_list, label = "log test loss")    
+    plt.legend(loc = "upper right")
+    plt.savefig(plt_file)
+    plt.close('all')
+
+
+    figure = "Accurate_Rate_Curve" 
+    plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
+    #plt.plot(range(len(train_loss_list)), train_loss_list, label = "train loss")
+    plt.plot(range(len(test_accurate_rate_list)), test_accurate_rate_list, label = "log train loss")
     plt.legend(loc = "upper right")
     plt.savefig(plt_file)
     plt.close('all')
@@ -185,17 +237,33 @@ if __name__ == '__main__':
     feature = pca.transform(dist_list)
     print(pca.explained_variance_ratio_)
     
-    figure = "PCA"
+    figure = "PCA_train"
     plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
     plt.scatter(feature[:,0], feature[:,1])
     plt.grid()
     plt.savefig(plt_file)
     plt.close('all')
 
+    pca_valid = PCA(n_components = 'mle')
+    pca_valid.fit(valid_dist_list)
+    valid_feature = pca_valid.transform(valid_dist_list)
+    print(pca_valid.explained_variance_ratio_)
+
+    figure = "PCA_valid"
+    plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
+    plt.scatter(valid_feature[:,0], valid_feature[:,1])
+    plt.grid()
+    plt.savefig(plt_file)
+    plt.close('all')
+
+
+    
+
     with open(train_log_path,"w") as log_f:
         log_f.write(info1 + "\r\n")
         log_f.write(info3 + "\r\n")
-        log_f.write("Variance Ratio:" + str(pca.explained_variance_ratio_) + "\r\n")
+        log_f.write("Variance Ratio Train:" + str(pca.explained_variance_ratio_) + "\r\n")
+        log_f.write("Variance Ratio Test:" + str(pca_valid.explained_variance_ratio_) + "\r\n")
         
         
     
