@@ -28,21 +28,18 @@ import sklearn
 from sklearn.decomposition import PCA
 
 from neural_network import Attention_Net
+from neural_network import Linear_Net
 from datasets import FoodDataset
 
 
 ########################### FUNCTIONS
-
 def match_output(output,label):
-
     #print(torch.max(output).item())
     #print(output[0].dot(label[0]).item())
     if torch.max(output).item() == output[0].dot(label[0]).item():
         return 1
     else:
         return 0
-    
-    
 
 ########################### PARAMS
 #Constant
@@ -54,13 +51,13 @@ L2 = "L2"
 MSE = "MSE"
 WD = "000001"
 ATTENTION = "attention_net"
+LINEAR = "linear_net"
 RELU = "relu"
 SIGMOID = "sigmoid"
-
 DATE = "201909010"
 
 ## TRAIN PARAMS
-NET = ATTENTION
+NET = LINEAR
 BATCH_SIZE = 10
 LEARNING_RATE = 0.05
 WEIGHT_DECAY = torch.tensor(0.000001).float()
@@ -74,7 +71,6 @@ ACT = SIGMOID
 OPTIMIZER = SGD
 BETAS = (0.9,0.999)
 LOSS = MSE
-
 
 
 if __name__ == '__main__':
@@ -120,6 +116,8 @@ if __name__ == '__main__':
 
     if NET == ATTENTION:
         net = Attention_Net(dataset, params, activation = ACT)
+    elif NET == LINEAR:
+        net = Linear_Net(dataset, params = FEATURE_DIM, activation = ACT)
 
     ## OPTIMIZER
     if OPTIMIZER == SGD:
@@ -159,7 +157,7 @@ if __name__ == '__main__':
                 for dist in dist_origin:
                     dist_list.append(list(dist.detach().numpy()))
             elif NET == LINEAR:
-                out = net.forward(im)
+                out = net.forward(im,mode="train")
 
             mse_loss = loss_function(out, label)
 
@@ -189,6 +187,11 @@ if __name__ == '__main__':
                 output_array = list(out.detach().numpy())
                 test_output_list.append(output_array)
                 accurate_number += match_output(out,label)
+            elif NET == LINEAR:
+                out = net.forward(im,mode="valid")
+                output_array = list(out.detach().numpy())
+                test_output_list.append(output_array)
+                accurate_number += match_output(out,label)
 
             mse_loss = loss_function(out, label)
             test_loss_list_each_epoch.append(mse_loss.item())
@@ -210,7 +213,7 @@ if __name__ == '__main__':
         print(info2)
         if NET == ATTENTION:
             info3 = "Epoch: " + str(epoch) + " , Distribution: " + str(dist_origin)
-        print(info3)
+            print(info3)
         info4 = "Epoch: " + str(epoch) + " , Accurate Rate: " + str(accurate_rate)
         print(info4)
 
@@ -241,34 +244,35 @@ if __name__ == '__main__':
 
     ##### TEST
 
-    pca = PCA(n_components = 'mle')
-    pca.fit(dist_list)
+    if NET == ATTENTION:
+        pca = PCA(n_components = 'mle')
+        pca.fit(dist_list)
     
-    feature = pca.transform(dist_list)
-    print(pca.explained_variance_ratio_)
+        feature = pca.transform(dist_list)
+        print(pca.explained_variance_ratio_)
     
-    figure = "PCA_train"
-    plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
-    plt.scatter(feature[:,0], feature[:,1])
-    plt.grid()
-    plt.xlim(-1,1)
-    plt.ylim(-1,1)
-    plt.savefig(plt_file)
-    plt.close('all')
+        figure = "PCA_train"
+        plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
+        plt.scatter(feature[:,0], feature[:,1])
+        plt.grid()
+        plt.xlim(-1,1)
+        plt.ylim(-1,1)
+        plt.savefig(plt_file)
+        plt.close('all')
 
-    pca_valid = PCA(n_components = 'mle')
-    pca_valid.fit(valid_dist_list)
-    valid_feature = pca_valid.transform(valid_dist_list)
-    print(pca_valid.explained_variance_ratio_)
+        pca_valid = PCA(n_components = 'mle')
+        pca_valid.fit(valid_dist_list)
+        valid_feature = pca_valid.transform(valid_dist_list)
+        print(pca_valid.explained_variance_ratio_)
 
-    figure = "PCA_valid"
-    plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
-    plt.scatter(valid_feature[:,0], valid_feature[:,1])
-    plt.grid()
-    plt.xlim(-1,1)
-    plt.ylim(-1,1)
-    plt.savefig(plt_file)
-    plt.close('all')
+        figure = "PCA_valid"
+        plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
+        plt.scatter(valid_feature[:,0], valid_feature[:,1])
+        plt.grid()
+        plt.xlim(-1,1)
+        plt.ylim(-1,1)
+        plt.savefig(plt_file)
+        plt.close('all')
 
 
     
@@ -276,10 +280,12 @@ if __name__ == '__main__':
     with open(train_log_path,"w") as log_f:
         log_f.write(info1 + "\r\n")
         log_f.write(info2 + "\r\n")
-        log_f.write(info3 + "\r\n")
+        if NET == ATTENTION:
+            log_f.write(info3 + "\r\n")
         log_f.write(info4 + "\r\n")
-        log_f.write("Variance Ratio Train:" + str(pca.explained_variance_ratio_) + "\r\n")
-        log_f.write("Variance Ratio Test:" + str(pca_valid.explained_variance_ratio_) + "\r\n")
+        if NET == ATTENTION:
+            log_f.write("Variance Ratio Train:" + str(pca.explained_variance_ratio_) + "\r\n")
+            log_f.write("Variance Ratio Test:" + str(pca_valid.explained_variance_ratio_) + "\r\n")
         
         
     
