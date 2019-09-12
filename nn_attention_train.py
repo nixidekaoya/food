@@ -54,10 +54,10 @@ ATTENTION = "attention_net"
 LINEAR = "linear_net"
 RELU = "relu"
 SIGMOID = "sigmoid"
-DATE = "201909010"
+DATE = "20190912"
 
 ## TRAIN PARAMS
-NET = LINEAR
+NET = ATTENTION
 BATCH_SIZE = 10
 LEARNING_RATE = 0.05
 WEIGHT_DECAY = torch.tensor(0.000001).float()
@@ -95,6 +95,7 @@ if __name__ == '__main__':
 
     if not os.path.exists(plot_path):
         os.mkdir(plot_path)
+    
 
     data_num = dataset.data_num
     valid_data_num = valid_dataset.data_num
@@ -107,7 +108,7 @@ if __name__ == '__main__':
 
     valid_dataloader = DataLoader(dataset = valid_dataset,
                                   batch_size = 1,
-                                  shuffle = True,
+                                  shuffle = False,
                                   num_workers = 0)
 
     params = (QUERY_DIM,KEY_DIM,FEATURE_DIM)

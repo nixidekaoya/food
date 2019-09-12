@@ -1,0 +1,3 @@
+Epoch: 9999 , Train Loss: 0.018006237894296645
+Epoch: 9999 , Test Loss: 0.03229784206978674
+Epoch: 9999 , Accurate Rate: 0.38
