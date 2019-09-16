@@ -57,16 +57,16 @@ SIGMOID = "sigmoid"
 DATE = "20190916"
 
 ## TRAIN PARAMS
-NET = ATTENTION
+NET = LINEAR
 BATCH_SIZE = 10
 LEARNING_RATE = 0.05
 WEIGHT_DECAY = torch.tensor(0.000001).float()
 QUERY_DIM = 9
 KEY_DIM = 6
 FEATURE_DIM = 5
-EPOCH = 5000
+EPOCH = 10000
 MOMENTUM = 0.9
-REG = L2
+REG = L0
 ACT = SIGMOID
 OPTIMIZER = SGD
 BETAS = (0.9,0.999)
@@ -79,8 +79,7 @@ if __name__ == '__main__':
 
     extra = "Data_500_Epoch_" + str(DATE) + "_" + str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD)
     model_path = "/home/li/food/model/" + str(extra) + ".model"
-    train_log_path = "/home/li/food/model/train_log/" + str(extra) + ".txt"
-
+    
     input_csv = "/home/li/food/data/20190910_limofei_500_input.csv"
     output_csv = "/home/li/food/data/20190910_limofei_500_output.csv"
 
@@ -92,9 +91,16 @@ if __name__ == '__main__':
     valid_dataset = FoodDataset(valid_input_csv, valid_output_csv)
 
     plot_path = "/home/li/food/plot/" + str(DATE) + "/"
+    train_log_path = plot_path + "train_log/"
+    train_log_file_path = train_log_path + str(extra) + ".txt"
+    
+
 
     if not os.path.exists(plot_path):
         os.mkdir(plot_path)
+
+    if not os.path.exists(train_log_path):
+        os.mkdir(train_log_path)
     
 
     data_num = dataset.data_num
@@ -278,7 +284,7 @@ if __name__ == '__main__':
 
     
 
-    with open(train_log_path,"w") as log_f:
+    with open(train_log_file_path,"w") as log_f:
         log_f.write(info1 + "\r\n")
         log_f.write(info2 + "\r\n")
         if NET == ATTENTION:
