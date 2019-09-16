@@ -54,7 +54,7 @@ ATTENTION = "attention_net"
 LINEAR = "linear_net"
 RELU = "relu"
 SIGMOID = "sigmoid"
-DATE = "20190912"
+DATE = "20190916"
 
 ## TRAIN PARAMS
 NET = ATTENTION
@@ -64,9 +64,9 @@ WEIGHT_DECAY = torch.tensor(0.000001).float()
 QUERY_DIM = 9
 KEY_DIM = 6
 FEATURE_DIM = 5
-EPOCH = 2000
+EPOCH = 5000
 MOMENTUM = 0.9
-REG = L0
+REG = L2
 ACT = SIGMOID
 OPTIMIZER = SGD
 BETAS = (0.9,0.999)
@@ -239,7 +239,7 @@ if __name__ == '__main__':
     plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
     #plt.plot(range(len(train_loss_list)), train_loss_list, label = "train loss")
     plt.plot(range(len(test_accurate_rate_list)), test_accurate_rate_list, label = "Accurate Rate")
-    plt.legend(loc = "upper right")
+    plt.legend(loc = "lower right")
     plt.savefig(plt_file)
     plt.close('all')
 

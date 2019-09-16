@@ -1,0 +1,9 @@
+Epoch: 4999 , Train Loss: 0.017088920921087266
+Epoch: 4999 , Test Loss: 0.03534493119862815
+Epoch: 4999 , Distribution: tensor([[9.9520e-01, 9.4961e-05, 4.2749e-03, 1.3408e-04, 1.0697e-04, 1.8459e-04]],
+       grad_fn=<SoftmaxBackward>)
+Epoch: 4999 , Accurate Rate: 0.38
+Variance Ratio Train:[5.71475368e-01 4.28503197e-01 1.98871194e-05 8.65174129e-07
+ 6.82414876e-07]
+Variance Ratio Test:[5.20060073e-01 4.79914720e-01 2.35470138e-05 1.32850818e-06
+ 3.31130735e-07]
