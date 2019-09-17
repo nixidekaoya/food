@@ -52,7 +52,7 @@ class Attention_Net(nn.Module):
         init.normal(self.linear_layer1.bias, mean = 0, std = 1)
         init.normal(self.linear_layer2.bias, mean = 0, std = 1)
 
-    def forward(self,x,mode = "train"):
+    def forward(self,x):
         #Encoder
         inp = x
         zero_mask = self.get_zero_mask(x)
@@ -65,12 +65,11 @@ class Attention_Net(nn.Module):
 
         #Decoder
         x = self.linear_layer2(x)
-        inf_mask = self.get_inf_mask(inp,x)
-        if mode=="valid":
-            x = x.mul(inf_mask)
-        x = F.softmax(x, dim = 1)
-        if mode=="train":
-            x = x.mul(zero_mask)
+        exp_x = torch.exp(x)
+        mask_exp_x = exp_x.mul(zero_mask)
+        sum_mask_exp_x = torch.sum(mask_exp_x,1)
+        x = torch.div(mask_exp_x.t(),sum_mask_exp_x).t()
+
         return x,self.distribute
 
     def get_inf_mask(self,inp,x):
@@ -136,7 +135,7 @@ class Linear_Net(nn.Module):
         init.normal(self.linear_layer1.bias, mean = 0, std = 1)
         init.normal(self.linear_layer2.bias, mean = 0, std = 1)
 
-    def forward(self,x,mode = "train"):
+    def forward(self,x):
         #Encoder
         inp = x
         zero_mask = self.get_zero_mask(x)
@@ -144,12 +143,9 @@ class Linear_Net(nn.Module):
         x = self.act(x)
         #Decoder
         x = self.linear_layer2(x)
-        inf_mask = self.get_inf_mask(inp,x)
-        if mode=="valid":
-            x = x.mul(inf_mask)
         x = F.softmax(x, dim = 1)
-        if mode=="train":
-            x = x.mul(zero_mask)
+
+        x = x.mul(zero_mask)
         return x
 
     def get_inf_mask(self,inp,x):

@@ -58,7 +58,7 @@ class FoodDataset(Dataset):
 
     def __getitem__(self,index):
         input_item = torch.from_numpy(np.array(self.input_list[index])).float()
-        output_item = torch.from_numpy(np.array(self.output_list[index])).float()
+        output_item = torch.from_numpy(np.array(self.output_list[index])).long()
 
         return input_item,output_item
 

@@ -49,28 +49,29 @@ L0 = "L0"
 L1 = "L1"
 L2 = "L2"
 MSE = "MSE"
-WD = "000001"
+CEL = "CEL"
+WD = "0005"
 ATTENTION = "attention_net"
 LINEAR = "linear_net"
 RELU = "relu"
 SIGMOID = "sigmoid"
-DATE = "20190916"
+DATE = "20190917"
 
 ## TRAIN PARAMS
-NET = LINEAR
+NET = ATTENTION
 BATCH_SIZE = 10
 LEARNING_RATE = 0.05
-WEIGHT_DECAY = torch.tensor(0.000001).float()
+WEIGHT_DECAY = torch.tensor(0.0005).float()
 QUERY_DIM = 9
 KEY_DIM = 6
 FEATURE_DIM = 5
-EPOCH = 10000
+EPOCH = 5000
 MOMENTUM = 0.9
-REG = L0
+REG = L2
 ACT = SIGMOID
 OPTIMIZER = SGD
 BETAS = (0.9,0.999)
-LOSS = MSE
+LOSS = CEL
 
 
 if __name__ == '__main__':
@@ -133,7 +134,10 @@ if __name__ == '__main__':
         optimizer = torch.optim.Adam(net.parameters(), lr = LEARNING_RATE, betas = BETAS)
 
     ## LOSS
-    loss_function = torch.nn.MSELoss()
+    if LOSS == MSE:
+        loss_function = torch.nn.MSELoss()
+    elif LOSS == CEL:
+        loss_function = torch.nn.CrossEntropyLoss()
 
     ########## TRAINING
     train_loss_list = []
@@ -160,13 +164,20 @@ if __name__ == '__main__':
             l2_regularization = torch.tensor(0).float()
 
             if NET == ATTENTION:
-                out,dist_origin = net.forward(im,mode="train")
+                out,dist_origin = net.forward(im)
                 for dist in dist_origin:
                     dist_list.append(list(dist.detach().numpy()))
             elif NET == LINEAR:
-                out = net.forward(im,mode="train")
+                out = net.forward(im)
 
-            mse_loss = loss_function(out, label)
+            #print(out)
+            #print(label)
+            #print(out.shape)
+            #print(label.shape)
+
+            org_loss = loss_function(out, torch.max(label,1)[1])
+            #print(torch.max(label,1)[1])
+            #print(org_loss)
 
             ## Regularization
             for param in net.parameters():
@@ -174,34 +185,35 @@ if __name__ == '__main__':
                 l2_regularization += WEIGHT_DECAY * torch.norm(param,2)
 
             if REG == L0:
-                loss = mse_loss + l0_regularization
+                loss = org_loss + l0_regularization
             elif REG == L1:
-                loss = mse_loss + l1_regularization
+                loss = org_loss + l1_regularization
             elif REG == L2:
-                loss = mse_loss + l2_regularization
+                loss = org_loss + l2_regularization
 
-            train_loss_list_each_epoch.append(mse_loss.item())
+            train_loss_list_each_epoch.append(org_loss.item())
 
             optimizer.zero_grad()
+            #print(loss)
             loss.backward()
             optimizer.step()
 
         for im,label in valid_dataloader:
             if NET == ATTENTION:
-                out,dist_origin = net.forward(im,mode="valid")
+                out,dist_origin = net.forward(im)
                 for dist in dist_origin:
                     valid_dist_list.append(list(dist.detach().numpy()))
                 output_array = list(out.detach().numpy())
                 test_output_list.append(output_array)
-                accurate_number += match_output(out,label)
+                accurate_number += match_output(out,label.float())
             elif NET == LINEAR:
                 out = net.forward(im,mode="valid")
                 output_array = list(out.detach().numpy())
                 test_output_list.append(output_array)
-                accurate_number += match_output(out,label)
+                accurate_number += match_output(out,label.float())
 
-            mse_loss = loss_function(out, label)
-            test_loss_list_each_epoch.append(mse_loss.item())
+            org_loss = loss_function(out, torch.max(label,1)[1])
+            test_loss_list_each_epoch.append(org_loss.item())
 
         accurate_rate = float(accurate_number)/ valid_data_num
         test_accurate_rate_list.append(accurate_rate)
