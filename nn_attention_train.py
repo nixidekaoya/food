@@ -67,19 +67,19 @@ KEY_DIM = 6
 FEATURE_DIM = 5
 EPOCH = 1000
 MOMENTUM = 0.9
-REG = L2
+REG = L0
 ACT = SIGMOID
 OPTIMIZER = SGD
 BETAS = (0.9,0.999)
 LOSS = CEL
-MASK = True
+MASK = False
 
 
 if __name__ == '__main__':
     ############### Data Preparation ##############
     username = "li_mofei"
 
-    extra = "Data_500_Epoch_" + str(DATE) + "_" + str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD)
+    extra = "Data_1000_Epoch_" + str(DATE) + "_" + str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD) + "_MASK_" + str(MASK)
     model_path = "/home/li/food/model/" + str(extra) + ".model"
     
     input_csv = "/home/li/food/data/20190922_limofei_1000_input.csv"
