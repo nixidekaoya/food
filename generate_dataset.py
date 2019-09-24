@@ -8,9 +8,9 @@ import math
 import os
 import random
 
-csv_file = "/home/li/datasets/csv/20190910_limofei_500_food.csv"
-input_csv = "/home/li/food/data/20190910_limofei_500_input.csv"
-output_csv = "/home/li/food/data/20190910_limofei_500_output.csv"
+csv_file = "/home/li/datasets/csv/20190922_limofei_1000_food.csv"
+input_csv = "/home/li/food/data/20190922_limofei_1000_input.csv"
+output_csv = "/home/li/food/data/20190922_limofei_1000_output.csv"
 list_csv_path = "/home/li/webapi/domain/combine_lists.csv"
 
 

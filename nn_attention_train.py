@@ -55,23 +55,24 @@ ATTENTION = "attention_net"
 LINEAR = "linear_net"
 RELU = "relu"
 SIGMOID = "sigmoid"
-DATE = "20190917"
+DATE = "20190924"
 
 ## TRAIN PARAMS
 NET = ATTENTION
 BATCH_SIZE = 10
 LEARNING_RATE = 0.05
-WEIGHT_DECAY = torch.tensor(0.0005).float()
+WEIGHT_DECAY = torch.tensor(0.005).float()
 QUERY_DIM = 9
 KEY_DIM = 6
 FEATURE_DIM = 5
-EPOCH = 5000
+EPOCH = 1000
 MOMENTUM = 0.9
 REG = L2
 ACT = SIGMOID
 OPTIMIZER = SGD
 BETAS = (0.9,0.999)
 LOSS = CEL
+MASK = True
 
 
 if __name__ == '__main__':
@@ -81,8 +82,8 @@ if __name__ == '__main__':
     extra = "Data_500_Epoch_" + str(DATE) + "_" + str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD)
     model_path = "/home/li/food/model/" + str(extra) + ".model"
     
-    input_csv = "/home/li/food/data/20190910_limofei_500_input.csv"
-    output_csv = "/home/li/food/data/20190910_limofei_500_output.csv"
+    input_csv = "/home/li/food/data/20190922_limofei_1000_input.csv"
+    output_csv = "/home/li/food/data/20190922_limofei_1000_output.csv"
 
     valid_input_csv = "/home/li/food/data/20190903_limofei_100_input_validation.csv"
     valid_output_csv = "/home/li/food/data/20190903_limofei_100_output_validation.csv"
@@ -164,7 +165,7 @@ if __name__ == '__main__':
             l2_regularization = torch.tensor(0).float()
 
             if NET == ATTENTION:
-                out,dist_origin = net.forward(im)
+                out,dist_origin = net.forward(im,masked = MASK)
                 for dist in dist_origin:
                     dist_list.append(list(dist.detach().numpy()))
             elif NET == LINEAR:
@@ -235,7 +236,12 @@ if __name__ == '__main__':
             print(info3)
         info4 = "Epoch: " + str(epoch) + " , Accurate Rate: " + str(accurate_rate)
         print(info4)
-
+        info5 = "Epoch: " + str(epoch) + " , Output: " + str(out)
+        print(info5)
+        
+        for para in net.parameters():
+            info6 = "Epoch: " + str(epoch) + " , Parameters: " + str(para)
+            #print(info6)
 
     print(model_path)
     torch.save(net.state_dict(), model_path)
@@ -294,7 +300,6 @@ if __name__ == '__main__':
         plt.close('all')
 
 
-    
 
     with open(train_log_file_path,"w") as log_f:
         log_f.write(info1 + "\r\n")
