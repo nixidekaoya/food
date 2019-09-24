@@ -67,12 +67,12 @@ KEY_DIM = 6
 FEATURE_DIM = 5
 EPOCH = 1000
 MOMENTUM = 0.9
-REG = L0
+REG = L2
 ACT = SIGMOID
 OPTIMIZER = SGD
 BETAS = (0.9,0.999)
 LOSS = CEL
-MASK = False
+MASK = True
 
 
 if __name__ == '__main__':
@@ -107,6 +107,7 @@ if __name__ == '__main__':
 
     data_num = dataset.data_num
     valid_data_num = valid_dataset.data_num
+    train_data_num = data_num
 
     dataloader = DataLoader(dataset = dataset,
                             batch_size = BATCH_SIZE,
@@ -115,6 +116,11 @@ if __name__ == '__main__':
 
 
     valid_dataloader = DataLoader(dataset = valid_dataset,
+                                  batch_size = 1,
+                                  shuffle = False,
+                                  num_workers = 0)
+
+    train_dataloader = DataLoader(dataset = dataset,
                                   batch_size = 1,
                                   shuffle = False,
                                   num_workers = 0)
@@ -146,6 +152,7 @@ if __name__ == '__main__':
     test_loss_list = []
     test_loss_log_list = []
     test_accurate_rate_list = []
+    train_accurate_rate_list = []
     
 
     for epoch in range(EPOCH):
@@ -153,7 +160,7 @@ if __name__ == '__main__':
         dist_list = []
         valid_dist_list = []
         test_output_list = []
-        accurate_number = 0
+        
         
 
         train_loss_list_each_epoch = []
@@ -199,6 +206,7 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
 
+        accurate_number = 0
         for im,label in valid_dataloader:
             if NET == ATTENTION:
                 out,dist_origin = net.forward(im)
@@ -216,8 +224,29 @@ if __name__ == '__main__':
             org_loss = loss_function(out, torch.max(label,1)[1])
             test_loss_list_each_epoch.append(org_loss.item())
 
-        accurate_rate = float(accurate_number)/ valid_data_num
-        test_accurate_rate_list.append(accurate_rate)
+        valid_accurate_rate = float(accurate_number)/ valid_data_num
+        test_accurate_rate_list.append(valid_accurate_rate)
+
+        accurate_number = 0
+        for im,label in train_dataloader:
+            if NET == ATTENTION:
+                out,dist_origin = net.forward(im)
+                for dist in dist_origin:
+                    valid_dist_list.append(list(dist.detach().numpy()))
+                output_array = list(out.detach().numpy())
+                #test_output_list.append(output_array)
+                accurate_number += match_output(out,label.float())
+            elif NET == LINEAR:
+                out = net.forward(im,mode="valid")
+                output_array = list(out.detach().numpy())
+                #test_output_list.append(output_array)
+                accurate_number += match_output(out,label.float())
+
+            #org_loss = loss_function(out, torch.max(label,1)[1])
+            #test_loss_list_each_epoch.append(org_loss.item())
+
+        train_accurate_rate = float(accurate_number)/ train_data_num
+        train_accurate_rate_list.append(train_accurate_rate)
 
         train_loss = np.mean(train_loss_list_each_epoch)
         train_loss_list.append(train_loss)
@@ -234,7 +263,7 @@ if __name__ == '__main__':
         if NET == ATTENTION:
             info3 = "Epoch: " + str(epoch) + " , Distribution: " + str(dist_origin)
             print(info3)
-        info4 = "Epoch: " + str(epoch) + " , Accurate Rate: " + str(accurate_rate)
+        info4 = "Epoch: " + str(epoch) + " , Train Accuracy: " + str(train_accurate_rate) + " , Test Accuracy: " + str(valid_accurate_rate) 
         print(info4)
         info5 = "Epoch: " + str(epoch) + " , Output: " + str(out)
         print(info5)
@@ -262,7 +291,9 @@ if __name__ == '__main__':
     figure = "Accurate_Rate_Curve" 
     plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
     #plt.plot(range(len(train_loss_list)), train_loss_list, label = "train loss")
-    plt.plot(range(len(test_accurate_rate_list)), test_accurate_rate_list, label = "Accurate Rate")
+    plt.plot(range(len(test_accurate_rate_list)), test_accurate_rate_list, label = "Valid Accurate Rate")
+    plt.plot(range(len(train_accurate_rate_list)), train_accurate_rate_list, label = "Train Accurate Rate")
+    
     plt.legend(loc = "lower right")
     plt.savefig(plt_file)
     plt.close('all')
