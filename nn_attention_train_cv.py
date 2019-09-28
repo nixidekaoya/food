@@ -91,10 +91,10 @@ if __name__ == '__main__':
 
     dataset = FoodDataset(input_csv,output_csv)
 
-    valid_dataset = FoodDataset(valid_input_csv, valid_output_csv)
+    #valid_dataset = FoodDataset(valid_input_csv, valid_output_csv)
 
     plot_path = "/home/li/food/plot/" + str(DATE) + "/CV/"
-    train_log_path = plot_path + "train_log/CV/"
+    train_log_path = plot_path + "train_log/"
     train_log_file_path = train_log_path + str(extra) + ".txt"
     
 
@@ -107,17 +107,25 @@ if __name__ == '__main__':
     
 
     data_num = dataset.data_num
-    valid_data_num = data_num/K_FOLDER
-    train_data_num = data_num - valid_data_num
-    sample_data_num = valid_data_num
+    valid_data_num = int(data_num/K_FOLDER)
+    train_data_num = int(data_num - valid_data_num)
+    sample_data_num = int(valid_data_num)
+
+    print(train_data_num)
+    print(valid_data_num)
 
     splits_list = []
     for i in range(K_FOLDER):
         splits_list.append(sample_data_num)
     splits_list = tuple(splits_list)
+    print(splits_list)
 
     datasets = torch.utils.data.random_split(dataset,splits_list)
     dataloader_list = []
+    dataloader_bs1_list = []
+    #### DEBUG
+    #for ds in datasets:
+        #print(ds.__len__())
 
     for ds in datasets:
         dataloader = DataLoader(dataset = ds,
@@ -125,6 +133,14 @@ if __name__ == '__main__':
                                 shuffle = True,
                                 num_workers = 0)
         dataloader_list.append(dataloader)
+
+        dataloader_bs1 = DataLoader(dataset = ds,
+                                    batch_size = 1,
+                                    shuffle = True,
+                                    num_workers = 0)
+        dataloader_bs1_list.append(dataloader_bs1)
+
+        
 
     params = (QUERY_DIM,KEY_DIM,FEATURE_DIM)
 
@@ -140,12 +156,18 @@ if __name__ == '__main__':
             net = Linear_Net(dataset, params = FEATURE_DIM, activation = ACT)
             net_list.append(net)
 
+
+    optimizer_list = []
     ## OPTIMIZER
     if OPTIMIZER == SGD:
-        optimizer = torch.optim.SGD(net.parameters(), lr = LEARNING_RATE, momentum = MOMENTUM)
+        for i in range(K_FOLDER):
+            optimizer = torch.optim.SGD(net_list[i].parameters(), lr = LEARNING_RATE, momentum = MOMENTUM)
+            optimizer_list.append(optimizer)
     elif OPTIMIZER == ADAM:
-        optimizer = torch.optim.Adam(net.parameters(), lr = LEARNING_RATE, betas = BETAS)
-
+        for i in range(K_FOLDER):
+            optimizer = torch.optim.Adam(net_list[i].parameters(), lr = LEARNING_RATE, betas = BETAS)
+            optimizer_list.append(optimizer)
+            
     ## LOSS
     if LOSS == MSE:
         loss_function = torch.nn.MSELoss()
@@ -166,9 +188,9 @@ if __name__ == '__main__':
     for k in range(K_FOLDER):
         train_loss_list.append([])
         train_loss_log_list.append([])
-        test_loss_list.append([])
-        test_loss_log_list.append([])
-        test_accurate_rate_list.append([])
+        valid_loss_list.append([])
+        valid_loss_log_list.append([])
+        valid_accurate_rate_list.append([])
         train_accurate_rate_list.append([])
     
 
@@ -179,9 +201,13 @@ if __name__ == '__main__':
         train_average_accuracy = 0
         valid_average_accuracy = 0
         for k in range(K_FOLDER):
-            valid_dataloader = data_loader_list[k]
+            valid_dataloader = dataloader_list[k]
             train_dataloader = dataloader_list[:k] + dataloader_list[k+1:]
+
+            valid_dataloader_bs1 = dataloader_bs1_list[k]
+            train_dataloader_bs1 = dataloader_bs1_list[:k] + dataloader_bs1_list[k+1:]
             net = net_list[k]
+            optimizer = optimizer_list[k]
         
             net.train()
 
@@ -221,29 +247,33 @@ if __name__ == '__main__':
                     
 
             accurate_number = 0
-            for dataloader in train_dataloader:
+            #counter = 0
+            for dataloader in train_dataloader_bs1:
                 train_loss_each = 0
                     
-                for im,label in valid_dataloader:
+                for im,label in dataloader:
+                    #counter += 1
                     if NET == ATTENTION:
                         out,dist_origin = net.forward(im)
                         accurate_number += match_output(out,label.float())
+                        #print(accurate_number)
                     elif NET == LINEAR:
                         out = net.forward(im,mode="valid")
                         accurate_number += match_output(out,label.float())
                         
                     org_loss = loss_function(out, torch.max(label,1)[1])
                     train_loss_list_each_epoch.append(org_loss.item())
+            #print(counter)
 
             train_accurate_rate = float(accurate_number)/ train_data_num
-            train_accurate_rate_list[k].append(valid_accurate_rate)
+            train_accurate_rate_list[k].append(train_accurate_rate)
             train_average_accuracy += train_accurate_rate
             train_loss = np.mean(train_loss_list_each_epoch)
             train_loss_list[k].append(train_loss)
             train_loss_log_list[k].append(math.log(train_loss))
 
             accurate_number = 0
-            for im,label in train_dataloader:
+            for im,label in valid_dataloader_bs1:
                 if NET == ATTENTION:
                     out,dist_origin = net.forward(im)
                     accurate_number += match_output(out,label.float())
@@ -264,7 +294,7 @@ if __name__ == '__main__':
 
             ### Train LOG
             info1 = "Epoch: " + str(epoch) + " , CV_Model: " + str(k) + " , Train Loss: " + str(train_loss)
-            info2 = "Epoch: " + str(epoch) + " , CV_Model: " + str(k) + " , Test Loss: " + str(test_loss)
+            info2 = "Epoch: " + str(epoch) + " , CV_Model: " + str(k) + " , valid Loss: " + str(valid_loss)
             info3 = "Epoch: " + str(epoch) + " , CV_Model: " + str(k) + " , Train Accuracy: " + str(train_accurate_rate) + " , Test Accuracy: " + str(valid_accurate_rate) 
             print(info3)
             info5 = "Epoch: " + str(epoch) + " , Output: " + str(out)
@@ -299,8 +329,7 @@ if __name__ == '__main__':
 
     figure = "Accurate_Rate_Curve"
     for k in range(K_FOLDER):
-       plt_file = plot_path + str(extra) + "_" + str(figure) + "_CV_Model_" + str(k) + ".png"
-    #plt.plot(range(len(train_loss_list)), train_loss_list, label = "train loss")
+        plt_file = plot_path + str(extra) + "_" + str(figure) + "_CV_Model_" + str(k) + ".png"
         plt.plot(range(len(valid_accurate_rate_list[k])), valid_accurate_rate_list[k], label = "Valid Accurate Rate")
         plt.plot(range(len(train_accurate_rate_list[k])), train_accurate_rate_list[k], label = "Train Accurate Rate")
         plt.legend(loc = "lower right")
@@ -324,7 +353,7 @@ if __name__ == '__main__':
         y.append(train_accurate_rate_list[k][-1])
         y.append(valid_accurate_rate_list[k][-1])
         label = "Model_" + str(k)
-        plt.scatter(x,y,s = 600, c = "blue", alpha = 0.2*k, linewidths = "2", marker = "o", label = label)
+        plt.scatter(x,y,s = 600, c = "blue", alpha = float(1)/K_FOLDER * (k+1), linewidths = "2", marker = "o", label = label)
 
     y = []
     y.append(train_average_accuracy_list[-1])
