@@ -45,15 +45,15 @@ class Attention_Net(nn.Module):
 
         self.key_matrix = torch.nn.Parameter(torch.randn(self.query_dim, self.key_dim))
         self.value_matrix = torch.nn.Parameter(torch.randn(self.key_dim, self.feature_dim))
-        self.linear_layer2 = nn.Linear(self.feature_dim, self.output_dim)
+        #self.linear_layer2 = nn.Linear(self.feature_dim, self.output_dim)
         self.fixed_linear_layer2 = torch.nn.Parameter(torch.randn(self.feature_dim,self.output_dim), requires_grad = False)
 
         #print(self.fixed_linear_layer2)
 
         init.xavier_uniform(self.linear_layer1.weight)
-        init.xavier_uniform(self.linear_layer2.weight)
+        #init.xavier_uniform(self.linear_layer2.weight)
         init.normal(self.linear_layer1.bias, mean = 0, std = 1)
-        init.normal(self.linear_layer2.bias, mean = 0, std = 1)
+        #init.normal(self.linear_layer2.bias, mean = 0, std = 1)
 
     def forward(self,x, masked = True):
         #Encoder

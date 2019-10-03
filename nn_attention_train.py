@@ -26,7 +26,6 @@ from torchvision import transforms
 
 import sklearn
 from sklearn.decomposition import PCA
-
 from neural_network import Attention_Net
 from neural_network import Linear_Net
 from datasets import FoodDataset
@@ -42,6 +41,7 @@ def match_output(output,label):
         return 0
 
 ########################### PARAMS
+
 #Constant
 ADAM = "Adam"
 SGD = "SGD"
@@ -55,18 +55,18 @@ ATTENTION = "attention_net"
 LINEAR = "linear_net"
 RELU = "relu"
 SIGMOID = "sigmoid"
-DATE = "20191003"
+DATE = "20191004"
 
 ## TRAIN PARAMS
 ARTIFICIAL = False
 NET = ATTENTION
 BATCH_SIZE = 10
 LEARNING_RATE = 0.05
-WEIGHT_DECAY = torch.tensor(0.002).float()
+WEIGHT_DECAY = torch.tensor(0.005).float()
 QUERY_DIM = 9
 KEY_DIM = 6
 FEATURE_DIM = 5
-EPOCH = 1000
+EPOCH = 2000
 MOMENTUM = 0.9
 REG = L2
 ACT = SIGMOID
@@ -101,8 +101,10 @@ if __name__ == '__main__':
                                       num_workers = 0)
 
         valid_data_num = valid_dataset.data_num
+        print(valid_data_num)
 
     dataset = FoodDataset(input_csv,output_csv)
+    
 
 
     plot_path = "/home/li/food/plot/" + str(DATE) + "/"
@@ -140,10 +142,12 @@ if __name__ == '__main__':
     elif NET == LINEAR:
         net = Linear_Net(dataset, params = FEATURE_DIM, activation = ACT)
 
+
     for i in filter(lambda p: p.requires_grad, net.parameters()):
         print(i)
     for i in filter(lambda p: not p.requires_grad, net.parameters()):
         print(i)
+
 
     ## OPTIMIZER
     if OPTIMIZER == SGD:
@@ -158,6 +162,7 @@ if __name__ == '__main__':
         loss_function = torch.nn.MSELoss()
     elif LOSS == CEL:
         loss_function = torch.nn.CrossEntropyLoss()
+
 
     ########## TRAINING
     train_loss_list = []
@@ -178,8 +183,7 @@ if __name__ == '__main__':
         if not ARTIFICIAL:
             test_output_list = []
             test_loss_list_each_epoch = []
-        
-        
+                
 
         train_loss_list_each_epoch = []
         
@@ -191,8 +195,6 @@ if __name__ == '__main__':
 
             if NET == ATTENTION:
                 out,dist_origin = net.forward(im,masked = MASK)
-                for dist in dist_origin:
-                    dist_list.append(list(dist.detach().numpy()))
             elif NET == LINEAR:
                 out = net.forward(im)
 
@@ -206,7 +208,7 @@ if __name__ == '__main__':
             #print(org_loss)
 
             ## Regularization
-            for param in net.parameters():
+            for param in filter(lambda p: p.requires_grad, net.parameters()):
                 l1_regularization += WEIGHT_DECAY * torch.norm(param,1)
                 l2_regularization += WEIGHT_DECAY * torch.norm(param,2)
 
@@ -244,15 +246,16 @@ if __name__ == '__main__':
                 org_loss = loss_function(out, torch.max(label,1)[1])
                 test_loss_list_each_epoch.append(org_loss.item())
 
-            valid_accurate_rate = float(accurate_number)/ valid_data_num
+            valid_accurate_rate = float(accurate_number) / valid_data_num
             test_accurate_rate_list.append(valid_accurate_rate)
+
 
         accurate_number = 0
         for im,label in train_dataloader:
             if NET == ATTENTION:
                 out,dist_origin = net.forward(im)
                 for dist in dist_origin:
-                    valid_dist_list.append(list(dist.detach().numpy()))
+                    dist_list.append(list(dist.detach().numpy()))
                 output_array = list(out.detach().numpy())
                 #test_output_list.append(output_array)
                 accurate_number += match_output(out,label.float())
@@ -350,6 +353,7 @@ if __name__ == '__main__':
         print(pca_valid.explained_variance_ratio_)
 
         figure = "PCA_valid"
+        print(len(valid_feature[:,0]))
         plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
         plt.scatter(valid_feature[:,0], valid_feature[:,1])
         plt.grid()
@@ -357,7 +361,6 @@ if __name__ == '__main__':
         plt.ylim(-1,1)
         plt.savefig(plt_file)
         plt.close('all')
-
 
 
     with open(train_log_file_path,"w") as log_f:

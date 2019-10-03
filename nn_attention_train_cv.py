@@ -279,7 +279,7 @@ if __name__ == '__main__':
                     out,dist_origin = net.forward(im)
                     accurate_number += match_output(out,label.float())
                 elif NET == LINEAR:
-                    out = net.forward(im,mode="valid")
+                    out = net.forward(im)
                     accurate_number += match_output(out,label.float())
 
                     org_loss = loss_function(out, torch.max(label,1)[1])
