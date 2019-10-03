@@ -157,6 +157,7 @@ if __name__ == '__main__':
             net_list.append(net)
 
 
+
     optimizer_list = []
     ## OPTIMIZER
     if OPTIMIZER == SGD:
@@ -302,6 +303,7 @@ if __name__ == '__main__':
             for para in net.parameters():
                 info6 = "Epoch: " + str(epoch) + " , Parameters: " + str(para)
                 #print(info6)
+            
 
         train_average_accuracy_list.append(train_average_accuracy/K_FOLDER)
         valid_average_accuracy_list.append(valid_average_accuracy/K_FOLDER)

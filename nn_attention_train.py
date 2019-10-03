@@ -55,13 +55,14 @@ ATTENTION = "attention_net"
 LINEAR = "linear_net"
 RELU = "relu"
 SIGMOID = "sigmoid"
-DATE = "20190924"
+DATE = "20191003"
 
 ## TRAIN PARAMS
+ARTIFICIAL = False
 NET = ATTENTION
 BATCH_SIZE = 10
 LEARNING_RATE = 0.05
-WEIGHT_DECAY = torch.tensor(0.005).float()
+WEIGHT_DECAY = torch.tensor(0.002).float()
 QUERY_DIM = 9
 KEY_DIM = 6
 FEATURE_DIM = 5
@@ -81,16 +82,28 @@ if __name__ == '__main__':
 
     extra = "Data_1000_Epoch_" + str(DATE) + "_" + str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD) + "_MASK_" + str(MASK)
     model_path = "/home/li/food/model/" + str(extra) + ".model"
-    
-    input_csv = "/home/li/food/data/20190922_limofei_1000_input.csv"
-    output_csv = "/home/li/food/data/20190922_limofei_1000_output.csv"
 
-    valid_input_csv = "/home/li/food/data/20190903_limofei_100_input_validation.csv"
-    valid_output_csv = "/home/li/food/data/20190903_limofei_100_output_validation.csv"
+    if ARTIFICIAL:
+        extra = "Artificial_Data_10000" + str(DATE) + "_" + str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD) + "_MASK_" + str(MASK)
+        input_csv = "/home/li/food/20190930_ITEM_NO_32_CLASS_NO_2_DATA_NO_10000_CHOICE_NO_4_CONDITION_NO32_input.csv"
+        output_csv = "/home/li/food/20190930_ITEM_NO_32_CLASS_NO_2_DATA_NO_10000_CHOICE_NO_4_CONDITION_NO32_output.csv"
+    else:
+        input_csv = "/home/li/food/data/20190922_limofei_1000_input.csv"
+        output_csv = "/home/li/food/data/20190922_limofei_1000_output.csv"
+
+        valid_input_csv = "/home/li/food/data/20190903_limofei_100_input_validation.csv"
+        valid_output_csv = "/home/li/food/data/20190903_limofei_100_output_validation.csv"
+        valid_dataset = FoodDataset(valid_input_csv, valid_output_csv)
+
+        valid_dataloader = DataLoader(dataset = valid_dataset,
+                                      batch_size = 1,
+                                      shuffle = False,
+                                      num_workers = 0)
+
+        valid_data_num = valid_dataset.data_num
 
     dataset = FoodDataset(input_csv,output_csv)
 
-    valid_dataset = FoodDataset(valid_input_csv, valid_output_csv)
 
     plot_path = "/home/li/food/plot/" + str(DATE) + "/"
     train_log_path = plot_path + "train_log/"
@@ -106,19 +119,12 @@ if __name__ == '__main__':
     
 
     data_num = dataset.data_num
-    valid_data_num = valid_dataset.data_num
     train_data_num = data_num
 
     dataloader = DataLoader(dataset = dataset,
                             batch_size = BATCH_SIZE,
                             shuffle = True,
                             num_workers = 0)
-
-
-    valid_dataloader = DataLoader(dataset = valid_dataset,
-                                  batch_size = 1,
-                                  shuffle = False,
-                                  num_workers = 0)
 
     train_dataloader = DataLoader(dataset = dataset,
                                   batch_size = 1,
@@ -134,11 +140,18 @@ if __name__ == '__main__':
     elif NET == LINEAR:
         net = Linear_Net(dataset, params = FEATURE_DIM, activation = ACT)
 
+    for i in filter(lambda p: p.requires_grad, net.parameters()):
+        print(i)
+    for i in filter(lambda p: not p.requires_grad, net.parameters()):
+        print(i)
+
     ## OPTIMIZER
     if OPTIMIZER == SGD:
-        optimizer = torch.optim.SGD(net.parameters(), lr = LEARNING_RATE, momentum = MOMENTUM)
+        optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, net.parameters()), lr = LEARNING_RATE, momentum = MOMENTUM)
+        #optimizer = torch.optim.SGD(net.parameters(), lr = LEARNING_RATE, momentum = MOMENTUM)
+
     elif OPTIMIZER == ADAM:
-        optimizer = torch.optim.Adam(net.parameters(), lr = LEARNING_RATE, betas = BETAS)
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr = LEARNING_RATE, betas = BETAS)
 
     ## LOSS
     if LOSS == MSE:
@@ -149,22 +162,27 @@ if __name__ == '__main__':
     ########## TRAINING
     train_loss_list = []
     train_loss_log_list = []
-    test_loss_list = []
-    test_loss_log_list = []
-    test_accurate_rate_list = []
     train_accurate_rate_list = []
+
+    if not ARTIFICIAL:
+        test_loss_list = []
+        test_loss_log_list = []
+        test_accurate_rate_list = []
     
 
     for epoch in range(EPOCH):
         net.train()
         dist_list = []
         valid_dist_list = []
-        test_output_list = []
+
+        if not ARTIFICIAL:
+            test_output_list = []
+            test_loss_list_each_epoch = []
         
         
 
         train_loss_list_each_epoch = []
-        test_loss_list_each_epoch = []
+        
 
         for im,label in dataloader:
             l0_regularization = torch.tensor(0).float()
@@ -206,26 +224,28 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
 
-        accurate_number = 0
-        for im,label in valid_dataloader:
-            if NET == ATTENTION:
-                out,dist_origin = net.forward(im)
-                for dist in dist_origin:
-                    valid_dist_list.append(list(dist.detach().numpy()))
-                output_array = list(out.detach().numpy())
-                test_output_list.append(output_array)
-                accurate_number += match_output(out,label.float())
-            elif NET == LINEAR:
-                out = net.forward(im,mode="valid")
-                output_array = list(out.detach().numpy())
-                test_output_list.append(output_array)
-                accurate_number += match_output(out,label.float())
 
-            org_loss = loss_function(out, torch.max(label,1)[1])
-            test_loss_list_each_epoch.append(org_loss.item())
+        if not ARTIFICIAL:
+            accurate_number = 0
+            for im,label in valid_dataloader:
+                if NET == ATTENTION:
+                    out,dist_origin = net.forward(im)
+                    for dist in dist_origin:
+                        valid_dist_list.append(list(dist.detach().numpy()))
+                    output_array = list(out.detach().numpy())
+                    test_output_list.append(output_array)
+                    accurate_number += match_output(out,label.float())
+                elif NET == LINEAR:
+                    out = net.forward(im,mode="valid")
+                    output_array = list(out.detach().numpy())
+                    test_output_list.append(output_array)
+                    accurate_number += match_output(out,label.float())
 
-        valid_accurate_rate = float(accurate_number)/ valid_data_num
-        test_accurate_rate_list.append(valid_accurate_rate)
+                org_loss = loss_function(out, torch.max(label,1)[1])
+                test_loss_list_each_epoch.append(org_loss.item())
+
+            valid_accurate_rate = float(accurate_number)/ valid_data_num
+            test_accurate_rate_list.append(valid_accurate_rate)
 
         accurate_number = 0
         for im,label in train_dataloader:
@@ -251,22 +271,28 @@ if __name__ == '__main__':
         train_loss = np.mean(train_loss_list_each_epoch)
         train_loss_list.append(train_loss)
         train_loss_log_list.append(math.log(train_loss))
-        test_loss = np.mean(test_loss_list_each_epoch)
-        test_loss_list.append(test_loss)
-        test_loss_log_list.append(math.log(test_loss))
+
+        if not ARTIFICIAL:
+            test_loss = np.mean(test_loss_list_each_epoch)
+            test_loss_list.append(test_loss)
+            test_loss_log_list.append(math.log(test_loss))
 
 
         info1 = "Epoch: " + str(epoch) + " , Train Loss: " + str(train_loss)
-        info2 = "Epoch: " + str(epoch) + " , Test Loss: " + str(test_loss)
         print(info1)
-        print(info2)
+        if not ARTIFICIAL:
+            info2 = "Epoch: " + str(epoch) + " , Test Loss: " + str(test_loss)
+            print(info2)
+
         if NET == ATTENTION:
             info3 = "Epoch: " + str(epoch) + " , Distribution: " + str(dist_origin)
             print(info3)
-        info4 = "Epoch: " + str(epoch) + " , Train Accuracy: " + str(train_accurate_rate) + " , Test Accuracy: " + str(valid_accurate_rate) 
+        info4 = "Epoch: " + str(epoch) + " , Train Accuracy: " + str(train_accurate_rate)
         print(info4)
-        info5 = "Epoch: " + str(epoch) + " , Output: " + str(out)
-        print(info5)
+
+        if not ARTIFICIAL:
+            info5 = "Epoch: " + str(epoch) + " , Test Accuracy: " + str(valid_accurate_rate)
+            print(info5)
         
         for para in net.parameters():
             info6 = "Epoch: " + str(epoch) + " , Parameters: " + str(para)
@@ -282,7 +308,8 @@ if __name__ == '__main__':
     plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
     #plt.plot(range(len(train_loss_list)), train_loss_list, label = "train loss")
     plt.plot(range(len(train_loss_log_list)), train_loss_log_list, label = "log train loss")
-    plt.plot(range(len(test_loss_log_list)), test_loss_log_list, label = "log test loss")    
+    if not ARTIFICIAL:
+        plt.plot(range(len(test_loss_log_list)), test_loss_log_list, label = "log test loss")    
     plt.legend(loc = "upper right")
     plt.savefig(plt_file)
     plt.close('all')
@@ -291,7 +318,8 @@ if __name__ == '__main__':
     figure = "Accurate_Rate_Curve" 
     plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
     #plt.plot(range(len(train_loss_list)), train_loss_list, label = "train loss")
-    plt.plot(range(len(test_accurate_rate_list)), test_accurate_rate_list, label = "Valid Accurate Rate")
+    if not ARTIFICIAL:
+        plt.plot(range(len(test_accurate_rate_list)), test_accurate_rate_list, label = "Valid Accurate Rate")
     plt.plot(range(len(train_accurate_rate_list)), train_accurate_rate_list, label = "Train Accurate Rate")
     
     plt.legend(loc = "lower right")

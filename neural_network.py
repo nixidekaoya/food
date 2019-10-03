@@ -46,6 +46,9 @@ class Attention_Net(nn.Module):
         self.key_matrix = torch.nn.Parameter(torch.randn(self.query_dim, self.key_dim))
         self.value_matrix = torch.nn.Parameter(torch.randn(self.key_dim, self.feature_dim))
         self.linear_layer2 = nn.Linear(self.feature_dim, self.output_dim)
+        self.fixed_linear_layer2 = torch.nn.Parameter(torch.randn(self.feature_dim,self.output_dim), requires_grad = False)
+
+        #print(self.fixed_linear_layer2)
 
         init.xavier_uniform(self.linear_layer1.weight)
         init.xavier_uniform(self.linear_layer2.weight)
@@ -64,7 +67,9 @@ class Attention_Net(nn.Module):
         x = x.mm(self.value_matrix)
 
         #Decoder
-        x = self.linear_layer2(x)
+        x = x.mm(self.fixed_linear_layer2)
+        #x = self.linear_layer2(x)
+        #print(x.shape)
         out_unmask = F.softmax(x,dim = 1)
         exp_x = torch.exp(x)
         mask_exp_x = exp_x.mul(zero_mask)
