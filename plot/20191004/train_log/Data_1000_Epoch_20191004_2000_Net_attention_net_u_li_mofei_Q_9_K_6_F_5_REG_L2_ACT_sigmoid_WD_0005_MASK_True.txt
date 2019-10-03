@@ -1,9 +1,9 @@
-Epoch: 1999 , Train Loss: 2.930569894313812
-Epoch: 1999 , Test Loss: 3.2256191182136535
-Epoch: 1999 , Distribution: tensor([[0.1407, 0.1010, 0.7195, 0.0129, 0.0129, 0.0129]],
+Epoch: 1999 , Train Loss: 2.913695421218872
+Epoch: 1999 , Test Loss: 3.293846709728241
+Epoch: 1999 , Distribution: tensor([[0.0036, 0.2553, 0.0036, 0.0036, 0.7304, 0.0036]],
        grad_fn=<SoftmaxBackward>)
-Epoch: 1999 , Train Accuracy: 0.643
-Variance Ratio Train:[6.19291935e-01 3.80433838e-01 2.74227403e-04 6.08371555e-15
- 8.69424460e-47]
-Variance Ratio Test:[5.27146046e-01 4.72530716e-01 3.23237874e-04 5.95640723e-15
- 2.69543534e-46]
+Epoch: 1999 , Train Accuracy: 0.629
+Variance Ratio Train:[9.93051005e-01 6.94899540e-03 5.15612869e-15 2.39057126e-15
+ 3.30104899e-16]
+Variance Ratio Test:[9.87514173e-01 1.24858265e-02 4.98930391e-15 2.57823653e-15
+ 4.80838231e-16]
