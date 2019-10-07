@@ -75,6 +75,10 @@ BETAS = (0.9,0.999)
 LOSS = CEL
 MASK = True
 
+## VALIDATE PARAMS
+VALIDATE_NUMER = 1000
+
+
 
 if __name__ == '__main__':
     ############### Data Preparation ##############
@@ -84,17 +88,18 @@ if __name__ == '__main__':
     #model_path = "/home/li/food/model/" + str(extra) + ".model"
 
     ## Real
-    #input_csv = "/home/li/food/data/20190922_limofei_1000_input.csv"
-    #output_csv = "/home/li/food/data/20190922_limofei_1000_output.csv"
+    valid_input_csv = "/home/li/food/data/20190922_limofei_1000_input.csv"
+    valid_output_csv = "/home/li/food/data/20190922_limofei_1000_output.csv"
 
     ## Artificial
-    input_csv = "/home/li/datasets/csv/Artificial_201901004_ITEM_NO_32_CLASS_NO_2_DATA_NO_1000000_CHOICE_NO_4_CONDITION_NO32input.csv"
-    output_csv = "/home/li/datasets/csv/Artificial_201901004_ITEM_NO_32_CLASS_NO_2_DATA_NO_1000000_CHOICE_NO_4_CONDITION_NO32output.csv"
+    input_csv = "/home/li/food/artificial_data/Artificial_20191007_ITEM_NO_32_CLASS_NO_2_DATA_NO_100000_CHOICE_NO_4_CONDITION_NO32input.csv"
+    output_csv = "/home/li/food/artificial_data/Artificial_20191007_ITEM_NO_32_CLASS_NO_2_DATA_NO_100000_CHOICE_NO_4_CONDITION_NO32output.csv"
 
     #valid_input_csv = "/home/li/food/data/20190903_limofei_100_input_validation.csv"
     #valid_output_csv = "/home/li/food/data/20190903_limofei_100_output_validation.csv"
 
     dataset = FoodDataset(input_csv,output_csv)
+    valid_dataset = FoodDataset(valid_input_csv,valid_output_csv)
 
     #valid_dataset = FoodDataset(valid_input_csv, valid_output_csv)
 
@@ -167,11 +172,11 @@ if __name__ == '__main__':
     ## OPTIMIZER
     if OPTIMIZER == SGD:
         for i in range(K_FOLDER):
-            optimizer = torch.optim.SGD(net_list[i].parameters(), lr = LEARNING_RATE, momentum = MOMENTUM)
+            optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, net_list[i].parameters()), lr = LEARNING_RATE, momentum = MOMENTUM)
             optimizer_list.append(optimizer)
     elif OPTIMIZER == ADAM:
         for i in range(K_FOLDER):
-            optimizer = torch.optim.Adam(net_list[i].parameters(), lr = LEARNING_RATE, betas = BETAS)
+            optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, net_list[i].parameters()), lr = LEARNING_RATE, betas = BETAS)
             optimizer_list.append(optimizer)
             
     ## LOSS
@@ -369,13 +374,14 @@ if __name__ == '__main__':
     plt.legend(loc = "upper right")
     plt.savefig(plt_file)
     plt.close('all')
-    
+
+
     
     for k in range(K_FOLDER):
         net = net_list[k]
         valid_dist_list = []
-        dataloader = dataloader_bs1_list[k]
-        for im,label in dataloader:
+        valid_dataloader = dataloader_bs1_list[k]
+        for im,label in valid_dataloader[:VALIDATE_NUMBER]:
             out,dist_origin = net.forward(im)
             for dist in dist_origin:
                 valid_dist_list.append(list(dist.detach().numpy()))

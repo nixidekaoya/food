@@ -14,10 +14,10 @@ from numpy.random import choice
 class_number = 2
 condition_number = 32
 item_number = 32
-data_number = 10000
+data_number = 100000
 choice_number = 4
 total_number = class_number * item_number
-DATE = "20190930"
+DATE = "20191007"
 artificial_path = "/home/li/food/artificial_data/"
 extra = "_ITEM_NO_" + str(item_number) + "_CLASS_NO_" + str(class_number)
 log_file_path = artificial_path + str(DATE) + str(extra) + ".txt"
@@ -71,7 +71,10 @@ for i in range(data_number):
     sum_weights = sum(weights_list)
     for j in range(choice_number):
         weights_list[j] /= sum_weights
-    selected_choice = np.random.choice(choice_rand_list,p=weights_list)
+    selected_choice = choice_rand_list[np.argmax(weights_list)]
+    print(choice_rand_list)
+    print(weights_list)
+    print(selected_choice)
     output_array = np.zeros(item_number).tolist()
     output_array[selected_choice] = 1
     output_matrix.append(output_array)

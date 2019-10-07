@@ -73,7 +73,9 @@ ACT = SIGMOID
 OPTIMIZER = SGD
 BETAS = (0.9,0.999)
 LOSS = CEL
-MASK = True
+
+## VALIDATE PARAMS
+VALIDATE_NUMBER = 500
 
 
 
@@ -111,7 +113,7 @@ if __name__ == '__main__':
     for k in range(K_FOLDER):
         net = net_list[k]
         valid_dist_list = []
-        for im,label in dataloader:
+        for im,label in dataloader[:VALIDATE_NUMBER]:
             out,dist_origin = net.forward(im)
             for dist in dist_origin:
                 valid_dist_list.append(list(dist.detach().numpy()))
