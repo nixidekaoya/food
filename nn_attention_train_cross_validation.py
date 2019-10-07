@@ -76,7 +76,7 @@ LOSS = CEL
 MASK = True
 
 ## VALIDATE PARAMS
-VALIDATE_NUMER = 1000
+VALIDATE_NUMBER = 1000
 
 
 
@@ -376,13 +376,21 @@ if __name__ == '__main__':
     plt.close('all')
 
 
+    data_list = []
+    counter = 0
+    for data in dataloader_bs1_list[0]:
+        counter += 1
+        data_list.append(data)
+        if counter >= VALIDATE_NUMBER:
+            break
+
     
     for k in range(K_FOLDER):
         net = net_list[k]
         valid_dist_list = []
-        valid_dataloader = dataloader_bs1_list[k]
-        for im,label in valid_dataloader[:VALIDATE_NUMBER]:
-            out,dist_origin = net.forward(im)
+        #valid_dataloader = dataloader_bs1_list[k]
+        for data in data_list:
+            out,dist_origin = net.forward(data[0])
             for dist in dist_origin:
                 valid_dist_list.append(list(dist.detach().numpy()))
 
@@ -397,8 +405,8 @@ if __name__ == '__main__':
         plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
         plt.scatter(valid_feature[:,0], valid_feature[:,1])
         plt.grid()
-        plt.xlim(-0.5,0.5)
-        plt.ylim(-0.5,0.5)
+        plt.xlim(-1,1)
+        plt.ylim(-1,1)
         plt.savefig(plt_file)
         plt.close('all')
         

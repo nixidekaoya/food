@@ -75,7 +75,7 @@ BETAS = (0.9,0.999)
 LOSS = CEL
 
 ## VALIDATE PARAMS
-VALIDATE_NUMBER = 500
+VALIDATE_NUMBER = 1000
 
 
 
@@ -83,11 +83,13 @@ if __name__ == '__main__':
 
     username = "Artificial"
 
-    extra = "Data_1000_Epoch_" + str(DATE) + "_" + str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD) + "_MASK_" + str(MASK)
+    extra = "Data_1000_Epoch_" + str(DATE) + "_" + str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD)
 
-    input_csv = "/home/li/food/data/20190922_limofei_1000_input.csv"
-    output_csv = "/home/li/food/data/20190922_limofei_1000_output.csv"
+    ## Artificial
+    input_csv = "/home/li/food/artificial_data/Artificial_20191007_ITEM_NO_32_CLASS_NO_2_DATA_NO_100000_CHOICE_NO_4_CONDITION_NO32input.csv"
+    output_csv = "/home/li/food/artificial_data/Artificial_20191007_ITEM_NO_32_CLASS_NO_2_DATA_NO_100000_CHOICE_NO_4_CONDITION_NO32output.csv"
     dataset = FoodDataset(input_csv,output_csv)
+    #print(dataset[:100])
 
     plot_path = "/home/li/food/plot/" + str(DATE) + "/CV/"
     model_path = "/home/li/food/model/"
@@ -97,7 +99,7 @@ if __name__ == '__main__':
     params = (QUERY_DIM,KEY_DIM,FEATURE_DIM)
     net_list = []
     for i in range(K_FOLDER):
-        model_file = model_path + "Data_1000_Epoch_20191004_1000_Net_attention_net_u_li_mofei_Q_9_K_6_F_5_REG_L2_ACT_sigmoid_WD_0005_MASK_True_CV_Model_" + str(i) + ".model"
+        model_file = model_path + "Data_1000_Epoch_20191007_100_Net_attention_net_u_artificial_Q_9_K_6_F_5_REG_L2_ACT_sigmoid_WD_0005_MASK_True_CV_Model_" + str(i) + ".model"
         if NET == ATTENTION:
             net = Attention_Net(dataset,params,activation = ACT)
             net_list.append(net)
@@ -107,14 +109,22 @@ if __name__ == '__main__':
                             shuffle = True,
                             num_workers = 0)
 
-    
-    
+    counter = 0
+    data_list = []
+    for i in dataloader:
+        counter += 1
+        data_list.append(i)
+        if counter >= VALIDATE_NUMBER:
+            break
+        #print(i[0])
+
+    print(counter)
 
     for k in range(K_FOLDER):
         net = net_list[k]
         valid_dist_list = []
-        for im,label in dataloader[:VALIDATE_NUMBER]:
-            out,dist_origin = net.forward(im)
+        for data in data_list:
+            out,dist_origin = net.forward(data[0])
             for dist in dist_origin:
                 valid_dist_list.append(list(dist.detach().numpy()))
 
