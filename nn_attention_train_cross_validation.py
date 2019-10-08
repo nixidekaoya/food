@@ -55,18 +55,18 @@ ATTENTION = "attention_net"
 LINEAR = "linear_net"
 RELU = "relu"
 SIGMOID = "sigmoid"
-DATE = "20191007"
+DATE = "20191008"
 
 ## TRAIN PARAMS
 K_FOLDER = 5
 NET = ATTENTION
-BATCH_SIZE = 100
+BATCH_SIZE = 10
 LEARNING_RATE = 0.05
 WEIGHT_DECAY = torch.tensor(0.005).float()
 QUERY_DIM = 9
 KEY_DIM = 6
 FEATURE_DIM = 5
-EPOCH = 100
+EPOCH = 500
 MOMENTUM = 0.9
 REG = L2
 ACT = SIGMOID
@@ -98,7 +98,7 @@ if __name__ == '__main__':
     #valid_input_csv = "/home/li/food/data/20190903_limofei_100_input_validation.csv"
     #valid_output_csv = "/home/li/food/data/20190903_limofei_100_output_validation.csv"
 
-    dataset = FoodDataset(input_csv,output_csv)
+    dataset = FoodDataset(valid_input_csv,valid_output_csv)
     valid_dataset = FoodDataset(valid_input_csv,valid_output_csv)
 
     #valid_dataset = FoodDataset(valid_input_csv, valid_output_csv)
