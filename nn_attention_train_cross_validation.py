@@ -225,37 +225,6 @@ if __name__ == '__main__':
             train_loss_list_each_epoch = []
             valid_loss_list_each_epoch = []
 
-            for dataloader in train_dataloader:
-                for im,label in dataloader:
-                    l0_regularization = torch.tensor(0).float()
-                    l1_regularization = torch.tensor(0).float()
-                    l2_regularization = torch.tensor(0).float()
-
-                    if NET == ATTENTION:
-                        out,dist_origin = net.forward(im,masked = MASK)
-                        #for dist in dist_origin:
-                            #dist_list.append(list(dist.detach().numpy()))
-                    elif NET == LINEAR:
-                        out = net.forward(im)
-
-                    org_loss = loss_function(out, torch.max(label,1)[1])
-
-                    ## Regularization
-                    for param in net.parameters():
-                        l1_regularization += WEIGHT_DECAY * torch.norm(param,1)
-                        l2_regularization += WEIGHT_DECAY * torch.norm(param,2)
-
-                    if REG == L0:
-                        loss = org_loss + l0_regularization
-                    elif REG == L1:
-                        loss = org_loss + l1_regularization
-                    elif REG == L2:
-                        loss = org_loss + l2_regularization
-
-                    optimizer.zero_grad()
-                    loss.backward()
-                    optimizer.step()
-                    
 
             accurate_number = 0
             #counter = 0
@@ -301,6 +270,37 @@ if __name__ == '__main__':
             valid_loss = np.mean(valid_loss_list_each_epoch)
             valid_loss_list[k].append(valid_loss)
             valid_loss_log_list[k].append(math.log(valid_loss))
+
+            for dataloader in train_dataloader:
+                for im,label in dataloader:
+                    l0_regularization = torch.tensor(0).float()
+                    l1_regularization = torch.tensor(0).float()
+                    l2_regularization = torch.tensor(0).float()
+
+                    if NET == ATTENTION:
+                        out,dist_origin = net.forward(im,masked = MASK)
+                        #for dist in dist_origin:
+                            #dist_list.append(list(dist.detach().numpy()))
+                    elif NET == LINEAR:
+                        out = net.forward(im)
+
+                    org_loss = loss_function(out, torch.max(label,1)[1])
+
+                    ## Regularization
+                    for param in net.parameters():
+                        l1_regularization += WEIGHT_DECAY * torch.norm(param,1)
+                        l2_regularization += WEIGHT_DECAY * torch.norm(param,2)
+
+                    if REG == L0:
+                        loss = org_loss + l0_regularization
+                    elif REG == L1:
+                        loss = org_loss + l1_regularization
+                    elif REG == L2:
+                        loss = org_loss + l2_regularization
+
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
 
 
             ### Train LOG
