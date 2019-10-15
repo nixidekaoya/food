@@ -26,7 +26,7 @@ from torchvision import transforms
 
 #####################################
 class Attention_Net(nn.Module):
-    def __init__(self, dataset, params = (5,10,8), activation = "sigmoid", w_f = "Fixed"):
+    def __init__(self, dataset, params = (5,10,8), activation = "sigmoid", w_f = "Fixed",w_f_type = "Eye"):
         super(Attention_Net,self).__init__()
         self.dataset = dataset
         self.input_dim = self.dataset.input_dim
@@ -47,13 +47,15 @@ class Attention_Net(nn.Module):
         self.value_matrix = torch.nn.Parameter(torch.randn(self.key_dim, self.feature_dim))
         #self.linear_layer2 = nn.Linear(self.feature_dim, self.output_dim)
         if w_f == "Fixed":
-            if self.output_dim == self.feature_dim:
+            if w_f_type == "Eye":
                 self.fixed_linear_layer2 = torch.nn.Parameter(torch.eye(self.output_dim), requires_grad = False)
-            elif w_f == "Train":
+                print(self.fixed_linear_layer2)
+            elif w_f_type == "Rand":
                 self.fixed_linear_layer2 = torch.nn.Parameter(torch.randn(self.feature_dim,self.output_dim), requires_grad = False)
+                print(self.fixed_linear_layer2)
         else:
             self.fixed_linear_layer2 = torch.nn.Parameter(torch.randn(self.feature_dim,self.output_dim), requires_grad = True)
-        
+            print(fixed_linear_layer2)
 
         #print(self.fixed_linear_layer2)
 

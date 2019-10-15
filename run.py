@@ -60,10 +60,10 @@ def match_output(output,label):
 
 
 
-def run_normal(input_csv,output_csv,username,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATURE_DIM,QUERY_DIM,REG,LEARNING_RATE,WEIGHT_DECAY,LOSS,ACT,BATCH_SIZE,OPTIMIZER,NET,w_f,WD,MOMENTUM,extra_msg):
+def run_normal(input_csv,output_csv,username,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATURE_DIM,QUERY_DIM,REG,LEARNING_RATE,WEIGHT_DECAY,LOSS,ACT,BATCH_SIZE,OPTIMIZER,NET,w_f,w_f_type,WD,MOMENTUM,extra_msg):
 
     ############### Data Preparation ##############
-    extra = str(extra_msg) + str(DATE) + "_Epoch_"+ str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "WD" + str(WD)
+    extra = str(extra_msg) + str(DATE) + "_Epoch_"+ str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "WD" + str(WD) + "w_f" + str(w_f_type)
     
     model_path = "/home/li/food/model/" + str(extra) + ".model"
 
@@ -92,7 +92,7 @@ def run_normal(input_csv,output_csv,username,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATU
 
     dataloader = DataLoader(dataset = dataset,
                             batch_size = BATCH_SIZE,
-                            shuffle = True,
+                            shuffle = False,
                             num_workers = 0)
 
     train_dataloader = DataLoader(dataset = dataset,
@@ -106,7 +106,7 @@ def run_normal(input_csv,output_csv,username,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATU
 
     if NET == ATTENTION:
         if w_f == "FIXED":
-            net = Attention_Net(dataset, params, activation = ACT, w_f = "Fixed")
+            net = Attention_Net(dataset, params, activation = ACT, w_f = "Fixed", w_f_type = w_f_type)
         elif w_f == "TRAIN":
             net = Attention_Net(dataset, params, activation = ACT, w_f = "Train")
         
@@ -341,9 +341,9 @@ def run_normal(input_csv,output_csv,username,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATU
     
     return
 
-def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATURE_DIM,QUERY_DIM,REG,LEARNING_RATE,WEIGHT_DECAY,LOSS,ACT,BATCH_SIZE,OPTIMIZER,NET,w_f,VALIDATE_NUMBER,WD,extra_msg):
+def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATURE_DIM,QUERY_DIM,REG,LEARNING_RATE,WEIGHT_DECAY,LOSS,ACT,BATCH_SIZE,OPTIMIZER,NET,w_f,w_f_type,VALIDATE_NUMBER,WD,extra_msg):
         ############### Data Preparation ##############
-    extra = "CV_" + str(extra_msg) + str(DATE) + "_Epoch_"+ str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD)
+    extra = "CV_" + str(extra_msg) + str(DATE) + "_Epoch_"+ str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD) + "w_f" + str(w_f_type)
     #model_path = "/home/li/food/model/" + str(extra) + ".model"
 
     ## Artificial
@@ -353,6 +353,8 @@ def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFIC
     dataset = FoodDataset(input_csv,output_csv)
 
 
+    model_path = "/home/li/food/model/" + str(DATE) + "/"
+    
     plot_path = "/home/li/food/plot/" + str(DATE) + "/"
     if not os.path.exists(plot_path):
         os.mkdir(plot_path)
@@ -362,6 +364,9 @@ def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFIC
     
     if not os.path.exists(plot_path):
         os.mkdir(plot_path)
+    
+    if not os.path.exists(model_path):
+        os.mkdir(model_path)
 
     if not os.path.exists(train_log_path):
         os.mkdir(train_log_path)
@@ -411,7 +416,7 @@ def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFIC
     if NET == ATTENTION:
         for i in range(K_FOLDER):
             if w_f == "FIXED":
-                net = Attention_Net(dataset, params, activation = ACT, w_f = "Fixed")
+                net = Attention_Net(dataset, params, activation = ACT, w_f = "Fixed", w_f_type = w_f_type)
             elif w_f == "TRAIN":
                 net = Attention_Net(dataset, params, activation = ACT, w_f = "Train")
             net_list.append(net)
@@ -581,12 +586,13 @@ def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFIC
     #### Model Save
     #print(model_path)
     for k in range(K_FOLDER):
-        model_path = "/home/li/food/model/" + str(extra) + "_CV_Model_" + str(k) + ".model"
-        torch.save(net_list[k].state_dict(), model_path)
+        model_save = model_path + str(extra) + "_CV_Model_" + str(k) + ".model"
+        torch.save(net_list[k].state_dict(), model_save)
+        print(model_save)
 
 
     #### PLOT
-    title = "F_" + str(FEATURE_DIM) + "_wf_" + str(w_f)
+    title = "F_" + str(FEATURE_DIM) + "K_"+ str(KEY_DIM) + "_wf_" + str(w_f)
                                    
                                    
     figure = "Learning_Curve"
@@ -706,6 +712,7 @@ def run(input_csv,
         OPTIMIZER = SGD,
         NET = ATTENTION,
         w_f = "FIXED",
+        w_f_type = "Eye",
         VALIDATE_NUMBER = 1000,
         WD = "0005",
         extra_msg = ""
@@ -733,6 +740,7 @@ def run(input_csv,
         OPTIMIZER = OPTIMIZER,
         NET = NET,
         w_f = w_f,
+        w_f_type = w_f_type,
         WD = WD,
         extra_msg = extra_msg
         )
@@ -757,6 +765,7 @@ def run(input_csv,
         OPTIMIZER = OPTIMIZER,
         NET = NET,
         w_f = w_f,
+        w_f_type = w_f_type,
         VALIDATE_NUMBER = VALIDATE_NUMBER,
         WD = WD,
         extra_msg = extra_msg
