@@ -60,10 +60,10 @@ def match_output(output,label):
 
 
 
-def run_normal(input_csv,output_csv,username,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATURE_DIM,QUERY_DIM,REG,LEARNING_RATE,WEIGHT_DECAY,LOSS,ACT,BATCH_SIZE,OPTIMIZER,NET,w_f,w_f_type,WD,MOMENTUM,extra_msg):
+def run_normal(input_csv,output_csv,weight_csv,username,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATURE_DIM,QUERY_DIM,REG,LEARNING_RATE,WEIGHT_DECAY,LOSS,ACT,BATCH_SIZE,OPTIMIZER,NET,w_f,w_f_type,WD,MOMENTUM,extra_msg):
 
     ############### Data Preparation ##############
-    extra = str(extra_msg) + str(DATE) + "_Epoch_"+ str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "WD" + str(WD) + "w_f" + str(w_f_type)
+    extra = str(extra_msg) + str(DATE) + "_Epoch_"+ str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "WD" + str(WD) + "_wf_" + str(w_f_type)
     
     model_path = "/home/li/food/model/" + str(extra) + ".model"
 
@@ -341,7 +341,7 @@ def run_normal(input_csv,output_csv,username,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATU
     
     return
 
-def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATURE_DIM,QUERY_DIM,REG,LEARNING_RATE,WEIGHT_DECAY,LOSS,ACT,BATCH_SIZE,OPTIMIZER,NET,w_f,w_f_type,VALIDATE_NUMBER,WD,extra_msg):
+def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMENTUM,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATURE_DIM,QUERY_DIM,REG,LEARNING_RATE,WEIGHT_DECAY,LOSS,ACT,BATCH_SIZE,OPTIMIZER,NET,w_f,w_f_type,VALIDATE_NUMBER,WD,extra_msg):
         ############### Data Preparation ##############
     extra = "CV_" + str(extra_msg) + str(DATE) + "_Epoch_"+ str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD) + "w_f" + str(w_f_type)
     #model_path = "/home/li/food/model/" + str(extra) + ".model"
@@ -351,6 +351,9 @@ def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFIC
     output_csv = "/home/li/food/artificial_data/Artificial_20191007_ITEM_NO_32_CLASS_NO_2_DATA_NO_100000_CHOICE_NO_4_CONDITION_NO32output.csv"
 
     dataset = FoodDataset(input_csv,output_csv)
+    
+    print(weight_csv)
+    weights_df = pd.read_csv(weight_csv)
 
 
     model_path = "/home/li/food/model/" + str(DATE) + "/"
@@ -424,7 +427,13 @@ def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFIC
         for i in range(K_FOLDER):
             net = Linear_Net(dataset, params = FEATURE_DIM, activation = ACT)
             net_list.append(net)
-
+            
+    ### TEST
+    
+               
+                
+                
+            
 
 
     optimizer_list = []
@@ -570,9 +579,11 @@ def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFIC
             info1 = "Epoch: " + str(epoch) + " , CV_Model: " + str(k) + " , Train Loss: " + str(train_loss)
             info2 = "Epoch: " + str(epoch) + " , CV_Model: " + str(k) + " , valid Loss: " + str(valid_loss)
             info3 = "Epoch: " + str(epoch) + " , CV_Model: " + str(k) + " , Train Accuracy: " + str(train_accurate_rate) + " , Test Accuracy: " + str(valid_accurate_rate) 
-            print(info3)
+            #print(info3)
             info5 = "Epoch: " + str(epoch) + " , Output: " + str(out)
             #print(info5)
+            if epoch % 10 == 0 or epoch == (EPOCH - 1):
+                print(info3)
             for para in net.parameters():
                 info6 = "Epoch: " + str(epoch) + " , Parameters: " + str(para)
                 #print(info6)
@@ -592,11 +603,13 @@ def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFIC
 
 
     #### PLOT
-    title = "F_" + str(FEATURE_DIM) + "K_"+ str(KEY_DIM) + "_wf_" + str(w_f)
+    
                                    
                                    
     figure = "Learning_Curve"
     for k in range(K_FOLDER):
+        plt.figure()
+        title = "F_" + str(FEATURE_DIM) + "_K_"+ str(KEY_DIM) + "_wf_" + str(w_f) + "_Model_" + str(k)
         plt_file = plot_path + str(extra) + "_" + str(figure) + "_CV_Model_" + str(k) + ".png"
         #plt.plot(range(len(train_loss_list)), train_loss_list, label = "train loss")
         plt.plot(range(len(train_loss_log_list[k])), train_loss_log_list[k], label = "log train loss")
@@ -604,22 +617,28 @@ def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFIC
                                    
         plt.title(title)
         plt.legend(loc = "upper right")
+        plt.show()
         plt.savefig(plt_file)
         plt.close('all')
 
 
     figure = "Accurate_Rate_Curve"
     for k in range(K_FOLDER):
+        plt.figure()
+        title = "F_" + str(FEATURE_DIM) + "_K_"+ str(KEY_DIM) + "_wf_" + str(w_f) + "_Model_" + str(k)
         plt_file = plot_path + str(extra) + "_" + str(figure) + "_CV_Model_" + str(k) + ".png"
         plt.plot(range(len(valid_accurate_rate_list[k])), valid_accurate_rate_list[k], label = "Valid Accurate Rate")
         plt.plot(range(len(train_accurate_rate_list[k])), train_accurate_rate_list[k], label = "Train Accurate Rate")
         plt.title(title)
         plt.legend(loc = "lower right")
+        plt.show()
         plt.savefig(plt_file)
         plt.close('all')
 
-    figure = "Accuracy_Average_Curve" 
+    figure = "Accuracy_Average_Curve"
+    title = "F_" + str(FEATURE_DIM) + "_K_"+ str(KEY_DIM) + "_wf_" + str(w_f)
     plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
+    plt.figure()
     #plt.plot(range(len(train_loss_list)), train_loss_list, label = "train loss")
     plt.plot(range(len(valid_average_accuracy_list)), valid_average_accuracy_list, label = "Valid Accurate Average")
     plt.plot(range(len(train_average_accuracy_list)), train_average_accuracy_list, label = "Train Accurate Average")
@@ -627,12 +646,16 @@ def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFIC
     plt.title(title)
     plt.legend(loc = "lower right")
     plt.savefig(plt_file)
+    plt.show()
     plt.close('all')
 
     figure = "Accuracy_Scatter"
+    plt.figure()
+    
     plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
     x = ["Train Accuracy","Test Accuracy"]
     for k in range(K_FOLDER):
+        
         y = []
         y.append(train_accurate_rate_list[k][-1])
         y.append(valid_accurate_rate_list[k][-1])
@@ -645,6 +668,7 @@ def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFIC
     plt.scatter(x,y,s = 600, c = "yellow", alpha = 1, linewidths = "2", marker = "*", label = "Average")
     plt.title(title)
     plt.legend(loc = "best")
+    plt.show()
     plt.savefig(plt_file)
     plt.close('all')
 
@@ -676,6 +700,8 @@ def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFIC
         if len(pca.explained_variance_ratio_) >= 2:
 
             figure = "PCA_Artificial_Train_Model_" + str(k)
+            title = "F_" + str(FEATURE_DIM) + "_K_"+ str(KEY_DIM) + "_wf_" + str(w_f) + "_Model_" + str(k)
+            plt.figure()
             print(len(valid_feature[:,0]))
             plt_file = plot_path + str(extra) + "_" + str(figure) + ".png"
             plt.scatter(valid_feature[:,0], valid_feature[:,1])
@@ -684,7 +710,35 @@ def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFIC
             plt.ylim(-1,1)
             plt.title(title)
             plt.savefig(plt_file)
+            plt.show()
             plt.close('all')
+            
+        if FEATURE_DIM == 32:
+            matrix_value_csv = plot_path + str(extra) + "_value_matrix_Model_" + str(k) + ".csv"
+            matrix_value = []
+            for n,p in net_list[k].named_parameters():
+                if n == "value_matrix":
+                    p1 = list(p[0].detach().numpy())
+                    p2 = list(p[1].detach().numpy())
+                    p_a = [p1[i] + p2[i] for i in range(len(p1))]
+                    sort1 = list(np.argsort(p1))
+                    sort2 = list(np.argsort(p2))
+                    sorta = list(np.argsort(p_a))
+                    matrix_value.append(p1)
+                    matrix_value.append(p2)
+                    matrix_value.append(p_a)
+                    sort_index_1 = []
+                    sort_index_2 = []
+                    sort_index_a = []
+                    for i in range(len(p1)):
+                        sort_index_1.append(int(sort1.index(i)))
+                        sort_index_2.append(int(sort2.index(i)))
+                        sort_index_a.append(int(sorta.index(i)))
+                    matrix_value.append(sort_index_1)
+                    matrix_value.append(sort_index_2)
+                    matrix_value.append(sort_index_a)
+                    matrix_value_df = pd.DataFrame(np.array(matrix_value).transpose())
+                    matrix_value_df.to_csv(matrix_value_csv)
 
 
 
@@ -693,6 +747,7 @@ def run_cross_validation(input_csv,output_csv,username,K_FOLDER,MOMENTUM,ARTIFIC
 
 def run(input_csv,
         output_csv,
+        weight_csv = "",
         mode = "NORMAL",
         username = "Artificial",
         ARTIFICIAL = False,
@@ -721,8 +776,9 @@ def run(input_csv,
     WEIGHT_DECAY = torch.tensor(WEIGHT_DECAY).float()
 
     if mode == "NORMAL":
-        run_normal(input_csv,
-        output_csv,
+        run_normal(input_csv = input_csv,
+        output_csv = output_csv,
+        weight_csv = weight_csv,
         username = username,
         ARTIFICIAL = ARTIFICIAL,
         MOMENTUM = MOMENTUM,
@@ -745,8 +801,9 @@ def run(input_csv,
         extra_msg = extra_msg
         )
     elif mode == "CV":
-        run_cross_validation(input_csv,
-        output_csv,
+        run_cross_validation(input_csv = input_csv,
+        output_csv = output_csv,
+        weight_csv = weight_csv,
         username = username,
         ARTIFICIAL = ARTIFICIAL,
         K_FOLDER = K_FOLDER,
