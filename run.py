@@ -347,9 +347,6 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
     #model_path = "/home/li/food/model/" + str(extra) + ".model"
 
     ## Artificial
-    input_csv = "/home/li/food/artificial_data/Artificial_20191007_ITEM_NO_32_CLASS_NO_2_DATA_NO_100000_CHOICE_NO_4_CONDITION_NO32input.csv"
-    output_csv = "/home/li/food/artificial_data/Artificial_20191007_ITEM_NO_32_CLASS_NO_2_DATA_NO_100000_CHOICE_NO_4_CONDITION_NO32output.csv"
-
     dataset = FoodDataset(input_csv,output_csv)
     
     print(weight_csv)

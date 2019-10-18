@@ -29,16 +29,16 @@ class FoodDataset(Dataset):
     def __init__(self,input_csv,output_csv):
         self.input_data = pd.read_csv(input_csv)
         self.output_data = pd.read_csv(output_csv)
-        #print(self.input_data.shape)
-        #print(self.output_data.shape)
+        print(self.input_data.shape)
+        print(self.output_data.shape)
         self.B_list = list(self.output_data.columns)
         self.B_list_len = len(self.B_list) - 1
         self.output_dim = self.B_list_len
-        print(self.output_dim)
+        #print(self.output_dim)
         self.AB_list = list(self.input_data.columns)
         self.AB_list_len = len(self.AB_list) - 1
         self.input_dim = self.AB_list_len
-        print(self.input_dim)
+        #print(self.input_dim)
         self.A_list_len = self.AB_list_len - self.B_list_len
         self.A_list = self.AB_list[:self.A_list_len]
 

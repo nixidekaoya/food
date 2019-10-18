@@ -16,7 +16,7 @@ item_number = 32
 data_number = 100000
 choice_number = 4
 total_number = class_number * item_number
-DATE = "20191015"
+DATE = "20191016"
 artificial_path = "/home/li/food/artificial_data/"
 extra = "_ITEM_NO_" + str(item_number) + "_CLASS_NO_" + str(class_number)
 log_file_path = artificial_path + str(DATE) + str(extra) + ".txt"
@@ -36,7 +36,11 @@ for j in range(class_number):
     for i in range(item_number):
         weights[j][i] /= weight_sum
 
-for j in range(class_number):
+weights.append([])
+for i in range(item_number):
+    weights[class_number].append(sum([weights[j][i] for j in range(class_number)]))
+
+for j in range(class_number+1):
     sorts = list(np.argsort(weights[j]))
     weights_index = []
     for i in range(item_number):
@@ -61,6 +65,8 @@ for i in range(data_number):
     input_array = []
     choice_rand_list = random.sample(range(item_number),int(choice_number))
     class_no = random.choice(range(class_number))
+    
+    
     if class_no == 0:
         input_array.append(0)
     elif class_no == 1:
@@ -71,6 +77,7 @@ for i in range(data_number):
             input_array.append(1)
         else:
             input_array.append(0)
+            
 
     input_matrix.append(input_array)
     
@@ -89,12 +96,12 @@ for i in range(data_number):
     output_matrix.append(output_array)
     
     
-    
 
-input_columns = list(range(item_number))
-input_columns.append("flag")
+input_columns = ['flag']
+input_columns.extend(list(range(item_number)))
+
 print(input_columns)
-weight_columns = ["table1","table2","rank1","rank2"]
+weight_columns = ["table1","table2","sum_table","rank1","rank2","rank_sum12"]
 
 data_f_input = pd.DataFrame(input_matrix, columns = input_columns, index = range(data_number))
 print(data_f_input.shape)

@@ -32,6 +32,9 @@ class Attention_Net(nn.Module):
         self.input_dim = self.dataset.input_dim
         self.output_dim = self.dataset.output_dim
         self.condition_dim = self.input_dim - self.output_dim
+        #print(self.input_dim)
+        #print(self.output_dim)
+        #print(self.condition_dim)
 
         self.query_dim = int(params[0])
         self.key_dim = int(params[1])
