@@ -13,10 +13,10 @@ from numpy.random import choice
 #PARAMS
 class_number = 2
 item_number = 32
-data_number = 100000
+data_number = 1000
 choice_number = 4
 total_number = class_number * item_number
-DATE = "20191016"
+DATE = "20191020"
 artificial_path = "/home/li/food/artificial_data/"
 extra = "_ITEM_NO_" + str(item_number) + "_CLASS_NO_" + str(class_number)
 log_file_path = artificial_path + str(DATE) + str(extra) + ".txt"

@@ -46,7 +46,7 @@ ATTENTION = "attention_net"
 LINEAR = "linear_net"
 RELU = "relu"
 SIGMOID = "sigmoid"
-DATE = "20191008"
+DATE = "20191010"
 
 
 ########################### FUNCTIONS
@@ -57,6 +57,15 @@ def match_output(output,label):
         return 1
     else:
         return 0
+    
+def calculate_similarity(a,b):
+    a = np.array(a)
+    b = np.array(b)
+    dot = np.dot(a,b)
+    norma = np.linalg.norm(a)
+    normb = np.linalg.norm(b)
+    cos = dot/(norma * normb)
+    return cos
 
 
 
@@ -427,6 +436,11 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
             
     ### TEST
     
+    for k in range(K_FOLDER):
+        model_save = model_path + str(extra) + "_CV_Model_" + str(k) + "initial.model"
+        torch.save(net_list[k].state_dict(), model_save)
+        print(model_save)
+    
                
                 
                 
@@ -588,6 +602,11 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
 
         train_average_accuracy_list.append(train_average_accuracy/K_FOLDER)
         valid_average_accuracy_list.append(valid_average_accuracy/K_FOLDER)
+        
+        if epoch % 50 == 0:
+            for k in range(K_FOLDER):
+                model_save = model_path + str(extra) + "_CV_Model_" + str(k) + ".model"
+                torch.save(net_list[k].state_dict(), model_save)
 
         
 
@@ -736,8 +755,6 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
                     matrix_value.append(sort_index_a)
                     matrix_value_df = pd.DataFrame(np.array(matrix_value).transpose())
                     matrix_value_df.to_csv(matrix_value_csv)
-
-
 
 
     return
