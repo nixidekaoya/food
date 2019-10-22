@@ -593,7 +593,7 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
             #print(info3)
             info5 = "Epoch: " + str(epoch) + " , Output: " + str(out)
             #print(info5)
-            if epoch % 10 == 0 or epoch == (EPOCH - 1):
+            if epoch % 50 == 0 or epoch == (EPOCH - 1):
                 print(info3)
             for para in net.parameters():
                 info6 = "Epoch: " + str(epoch) + " , Parameters: " + str(para)
