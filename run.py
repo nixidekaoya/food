@@ -69,7 +69,7 @@ def calculate_similarity(a,b):
 
 
 
-def run_normal(input_csv,output_csv,weight_csv,username,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATURE_DIM,QUERY_DIM,REG,LEARNING_RATE,WEIGHT_DECAY,LOSS,ACT,BATCH_SIZE,OPTIMIZER,NET,w_f,w_f_type,WD,MOMENTUM,extra_msg):
+def run_normal(input_csv,output_csv,weight_csv,username,ARTIFICIAL,BATCH_NORM,DATE,EPOCH,KEY_DIM,FEATURE_DIM,QUERY_DIM,REG,LEARNING_RATE,WEIGHT_DECAY,LOSS,ACT,BATCH_SIZE,OPTIMIZER,NET,w_f,w_f_type,WD,MOMENTUM,extra_msg):
 
     ############### Data Preparation ##############
     extra = str(extra_msg) + str(DATE) + "_Epoch_"+ str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "WD" + str(WD) + "_wf_" + str(w_f_type)
@@ -169,14 +169,14 @@ def run_normal(input_csv,output_csv,weight_csv,username,ARTIFICIAL,DATE,EPOCH,KE
             accurate_number = 0
             for im,label in valid_dataloader:
                 if NET == ATTENTION:
-                    out,dist_origin = net.forward(im)
+                    out,dist_origin = net.forward(im,batch_norm = BATCH_NORM)
                     for dist in dist_origin:
                         valid_dist_list.append(list(dist.detach().numpy()))
                     output_array = list(out.detach().numpy())
                     test_output_list.append(output_array)
                     accurate_number += match_output(out,label.float())
                 elif NET == LINEAR:
-                    out = net.forward(im,mode="valid")
+                    out = net.forward(im,batch_norm = BATCH_NORM)
                     output_array = list(out.detach().numpy())
                     test_output_list.append(output_array)
                     accurate_number += match_output(out,label.float())
@@ -196,14 +196,14 @@ def run_normal(input_csv,output_csv,weight_csv,username,ARTIFICIAL,DATE,EPOCH,KE
         accurate_number = 0
         for im,label in train_dataloader:
             if NET == ATTENTION:
-                out,dist_origin = net.forward(im)
+                out,dist_origin = net.forward(im,batch_norm = BATCH_NORM)
                 for dist in dist_origin:
                     dist_list.append(list(dist.detach().numpy()))
                 output_array = list(out.detach().numpy())
                 #test_output_list.append(output_array)
                 accurate_number += match_output(out,label.float())
             elif NET == LINEAR:
-                out = net.forward(im,mode="valid")
+                out = net.forward(im,batch_norm = BATCH_NORM)
                 output_array = list(out.detach().numpy())
                 #test_output_list.append(output_array)
                 accurate_number += match_output(out,label.float())
@@ -224,9 +224,9 @@ def run_normal(input_csv,output_csv,weight_csv,username,ARTIFICIAL,DATE,EPOCH,KE
             l2_regularization = torch.tensor(0).float()
 
             if NET == ATTENTION:
-                out,dist_origin = net.forward(im,masked = MASK)
+                out,dist_origin = net.forward(im,masked = MASK,batch_norm = BATCH_NORM)
             elif NET == LINEAR:
-                out = net.forward(im)
+                out = net.forward(im,batch_norm = BATCH_NORM)
 
             #print(out)
             #print(label)
@@ -350,7 +350,7 @@ def run_normal(input_csv,output_csv,weight_csv,username,ARTIFICIAL,DATE,EPOCH,KE
     
     return
 
-def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMENTUM,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATURE_DIM,QUERY_DIM,REG,LEARNING_RATE,WEIGHT_DECAY,LOSS,ACT,BATCH_SIZE,OPTIMIZER,NET,w_f,w_f_type,VALIDATE_NUMBER,WD,extra_msg):
+def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,BATCH_NORM,MOMENTUM,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATURE_DIM,QUERY_DIM,REG,LEARNING_RATE,WEIGHT_DECAY,LOSS,ACT,BATCH_SIZE,OPTIMIZER,NET,w_f,w_f_type,VALIDATE_NUMBER,WD,extra_msg):
         ############### Data Preparation ##############
     extra = "CV_" + str(extra_msg) + str(DATE) + "_Epoch_"+ str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD) + "w_f" + str(w_f_type)
     #model_path = "/home/li/food/model/" + str(extra) + ".model"
@@ -431,7 +431,7 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
             net_list.append(net)
     elif NET == LINEAR:
         for i in range(K_FOLDER):
-            net = Linear_Net(dataset, params = FEATURE_DIM, activation = ACT)
+            net = Linear_Net(dataset, params = KEY_DIM, activation = ACT)
             net_list.append(net)
             
     ### TEST
@@ -441,11 +441,6 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
         torch.save(net_list[k].state_dict(), model_save)
         print(model_save)
     
-               
-                
-                
-            
-
 
     optimizer_list = []
     ## OPTIMIZER
@@ -499,8 +494,10 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
             net = net_list[k]
             optimizer = optimizer_list[k]
         
-            net.train()
-
+            
+            net.eval()
+            
+            
             train_loss_list_each_epoch = []
             valid_loss_list_each_epoch = []
             
@@ -508,14 +505,14 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
             accurate_number = 0
             for im,label in valid_dataloader_bs1:
                 if NET == ATTENTION:
-                    out,dist_origin = net.forward(im)
+                    out,dist_origin = net.forward(im,batch_norm = BATCH_NORM)
                     accurate_number += match_output(out,label.float())
                 elif NET == LINEAR:
-                    out = net.forward(im)
+                    out = net.forward(im,batch_norm = BATCH_NORM)
                     accurate_number += match_output(out,label.float())
 
-                    org_loss = loss_function(out, torch.max(label,1)[1])
-                    valid_loss_list_each_epoch.append(org_loss.item())
+                org_loss = loss_function(out, torch.max(label,1)[1])
+                valid_loss_list_each_epoch.append(org_loss.item())
                     
             
             valid_accurate_rate = float(accurate_number)/ valid_data_num
@@ -534,11 +531,11 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
                 for im,label in dataloader:
                     #counter += 1
                     if NET == ATTENTION:
-                        out,dist_origin = net.forward(im)
+                        out,dist_origin = net.forward(im,batch_norm = BATCH_NORM)
                         accurate_number += match_output(out,label.float())
                         #print(accurate_number)
                     elif NET == LINEAR:
-                        out = net.forward(im,mode="valid")
+                        out = net.forward(im,batch_norm = BATCH_NORM)
                         accurate_number += match_output(out,label.float())
                         
                     org_loss = loss_function(out, torch.max(label,1)[1])
@@ -554,6 +551,8 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
             train_loss_list[k].append(train_loss)
             train_loss_log_list[k].append(math.log(train_loss))
 
+            net.train()
+            
             for dataloader in train_dataloader:
                 for im,label in dataloader:
                     l0_regularization = torch.tensor(0).float()
@@ -561,11 +560,11 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
                     l2_regularization = torch.tensor(0).float()
 
                     if NET == ATTENTION:
-                        out,dist_origin = net.forward(im)
+                        out,dist_origin = net.forward(im,batch_norm = BATCH_NORM)
                         #for dist in dist_origin:
                             #dist_list.append(list(dist.detach().numpy()))
                     elif NET == LINEAR:
-                        out = net.forward(im)
+                        out = net.forward(im,batch_norm = BATCH_NORM)
 
                     org_loss = loss_function(out, torch.max(label,1)[1])
 
@@ -603,7 +602,7 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
         train_average_accuracy_list.append(train_average_accuracy/K_FOLDER)
         valid_average_accuracy_list.append(valid_average_accuracy/K_FOLDER)
         
-        if epoch % 50 == 0:
+        if epoch % 100 == 0:
             for k in range(K_FOLDER):
                 model_save = model_path + str(extra) + "_CV_Model_" + str(k) + ".model"
                 torch.save(net_list[k].state_dict(), model_save)
@@ -687,6 +686,10 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
     plt.show()
     plt.savefig(plt_file)
     plt.close('all')
+    
+    
+    if NET != ATTENTION:
+        return
 
 
     data_list = []
@@ -697,13 +700,16 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
         if counter >= VALIDATE_NUMBER:
             break
 
+            
+    
     
     for k in range(K_FOLDER):
         net = net_list[k]
+        net.eval()
         valid_dist_list = []
         #valid_dataloader = dataloader_bs1_list[k]
         for data in data_list:
-            out,dist_origin = net.forward(data[0])
+            out,dist_origin = net.forward(data[0],batch_norm = BATCH_NORM)
             for dist in dist_origin:
                 valid_dist_list.append(list(dist.detach().numpy()))
 
@@ -734,28 +740,16 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,MOMEN
             matrix_value = []
             for n,p in net_list[k].named_parameters():
                 if n == "value_matrix":
-                    p1 = list(p[0].detach().numpy())
-                    p2 = list(p[1].detach().numpy())
-                    p_a = [p1[i] + p2[i] for i in range(len(p1))]
-                    sort1 = list(np.argsort(p1))
-                    sort2 = list(np.argsort(p2))
-                    sorta = list(np.argsort(p_a))
-                    matrix_value.append(p1)
-                    matrix_value.append(p2)
-                    matrix_value.append(p_a)
-                    sort_index_1 = []
-                    sort_index_2 = []
-                    sort_index_a = []
-                    for i in range(len(p1)):
-                        sort_index_1.append(int(sort1.index(i)))
-                        sort_index_2.append(int(sort2.index(i)))
-                        sort_index_a.append(int(sorta.index(i)))
-                    matrix_value.append(sort_index_1)
-                    matrix_value.append(sort_index_2)
-                    matrix_value.append(sort_index_a)
+                    for i in range(KEY_DIM):
+                        p_i = list(p[i].detach().numpy())
+                        sortp = list(np.argsort(p_i))
+                        matrix_value.append(p_i)
+                        sort_index = []
+                        for j in range(len(p_i)):
+                            sort_index.append(int(sortp.index(j)))
+                        matrix_value.append(sort_index)
                     matrix_value_df = pd.DataFrame(np.array(matrix_value).transpose())
                     matrix_value_df.to_csv(matrix_value_csv)
-
 
     return
 
@@ -769,6 +763,7 @@ def run(input_csv,
         DATE = DATE,
         MOMENTUM = 0.9,
         EPOCH = 1000,
+        BATCH_NORM = False,
         K = 6,
         F = 10,
         Q = 9,
@@ -796,6 +791,7 @@ def run(input_csv,
         username = username,
         ARTIFICIAL = ARTIFICIAL,
         MOMENTUM = MOMENTUM,
+        BATCH_NORM = BATCH_NORM,
         DATE = DATE,
         EPOCH = EPOCH,
         KEY_DIM = K,
@@ -820,6 +816,7 @@ def run(input_csv,
         weight_csv = weight_csv,
         username = username,
         ARTIFICIAL = ARTIFICIAL,
+        BATCH_NORM = BATCH_NORM,
         K_FOLDER = K_FOLDER,
         MOMENTUM = MOMENTUM,
         DATE = DATE,

@@ -40,6 +40,7 @@ class Attention_Net(nn.Module):
         self.key_dim = int(params[1])
         self.feature_dim = int(params[2])
         self.linear_layer1 = nn.Linear(self.input_dim, self.query_dim)
+        self.bn1 = nn.BatchNorm1d(self.query_dim)
 
         if activation == "sigmoid":
             self.act = nn.Sigmoid()
@@ -47,7 +48,9 @@ class Attention_Net(nn.Module):
             self.act = nn.ReLU(True)
 
         self.key_matrix = torch.nn.Parameter(torch.randn(self.query_dim, self.key_dim))
+        self.bn2 = nn.BatchNorm1d(self.key_dim)
         self.value_matrix = torch.nn.Parameter(torch.randn(self.key_dim, self.feature_dim))
+        self.bn3 = nn.BatchNorm1d(self.feature_dim)
         #self.linear_layer2 = nn.Linear(self.feature_dim, self.output_dim)
         if w_f == "Fixed":
             if w_f_type == "Eye":
@@ -67,13 +70,17 @@ class Attention_Net(nn.Module):
         init.normal(self.linear_layer1.bias, mean = 0, std = 1)
         #init.normal(self.linear_layer2.bias, mean = 0, std = 1)
 
-    def forward(self,x, masked = True):
+    def forward(self,x, masked = True, batch_norm = False):
         #Encoder
         inp = x
         zero_mask = self.get_zero_mask(x)
         x = self.linear_layer1(x)
+        if batch_norm:
+            x = self.bn1(x)
         x = self.act(x)
         x = x.mm(self.key_matrix)
+        if batch_norm:
+            x = self.bn2(x)
         x = F.softmax(x,dim = 1)
         self.distribute = x
         x = x.mm(self.value_matrix)
@@ -82,6 +89,8 @@ class Attention_Net(nn.Module):
         x = x.mm(self.fixed_linear_layer2)
         #x = self.linear_layer2(x)
         #print(x.shape)
+        if batch_norm:
+            x = self.bn3(x)
         out_unmask = F.softmax(x,dim = 1)
         exp_x = torch.exp(x)
         mask_exp_x = exp_x.mul(zero_mask)
@@ -142,6 +151,7 @@ class Linear_Net(nn.Module):
 
         self.feature_dim = int(params)
         self.linear_layer1 = nn.Linear(self.input_dim, self.feature_dim)
+        self.bn1 = nn.BatchNorm1d(self.feature_dim)
 
         if activation == "sigmoid":
             self.act = nn.Sigmoid()
@@ -150,48 +160,31 @@ class Linear_Net(nn.Module):
 
         
         self.linear_layer2 = nn.Linear(self.feature_dim, self.output_dim)
+        self.bn2 = nn.BatchNorm2d(self.output_dim)
 
         init.xavier_uniform(self.linear_layer1.weight)
         init.xavier_uniform(self.linear_layer2.weight)
         init.normal(self.linear_layer1.bias, mean = 0, std = 1)
         init.normal(self.linear_layer2.bias, mean = 0, std = 1)
 
-    def forward(self,x):
+    def forward(self,x,batch_norm = False):
         #Encoder
         inp = x
         zero_mask = self.get_zero_mask(x)
         x = self.linear_layer1(x)
+        if batch_norm:
+            x = self.bn1(x)
         x = self.act(x)
         #Decoder
         x = self.linear_layer2(x)
-        x = F.softmax(x, dim = 1)
-
-        x = x.mul(zero_mask)
+        if batch_norm:
+            x = self.bn2(x)
+        exp_x = torch.exp(x)
+        mask_exp_x = exp_x.mul(zero_mask)
+        sum_mask_exp_x = torch.sum(mask_exp_x,1)
+        x = torch.div(mask_exp_x.t(),sum_mask_exp_x).t()
         return x
 
-    def get_inf_mask(self,inp,x):
-        inf = float('inf')
-        x_shape = x.shape
-        #print(x_shape[0])
-        #print(x_shape[1])
-        mask = []
-        inp = inp.data.numpy()
-        x = x.data.numpy()
-        for i in range(x_shape[0]):
-            sub_mask = []
-            for j in range(x_shape[1]):
-                if inp[i][self.condition_dim + j] == 0:
-                    if x[i][j] > 0:
-                        sub_mask.append(-inf)
-                    else:
-                        sub_mask.append(inf)
-                else:
-                    sub_mask.append(1)
-            mask.append(sub_mask)
-        mask = torch.from_numpy(np.array(mask)).float()
-        #print(mask.shape)
-        #print(mask)
-        return mask
 
     def get_zero_mask(self,x):
         x = x.data.numpy()
