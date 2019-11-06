@@ -10,7 +10,6 @@ import math
 import os
 
 import matplotlib
-#matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 import torch.nn as nn
@@ -29,6 +28,7 @@ from sklearn.decomposition import PCA
 
 from neural_network import Attention_Net
 from neural_network import Linear_Net
+from neural_network import Linear_NoHidden_Net
 from datasets import FoodDataset
 
 ########################### PARAMS
@@ -44,6 +44,7 @@ CEL = "CEL"
 WD = "0005"
 ATTENTION = "attention_net"
 LINEAR = "linear_net"
+LINEAR_NOHIDDEN = "linear_no_hidden_net"
 RELU = "relu"
 SIGMOID = "sigmoid"
 DATE = "20191010"
@@ -227,6 +228,8 @@ def run_normal(input_csv,output_csv,weight_csv,username,ARTIFICIAL,BATCH_NORM,DA
                 out,dist_origin = net.forward(im,masked = MASK,batch_norm = BATCH_NORM)
             elif NET == LINEAR:
                 out = net.forward(im,batch_norm = BATCH_NORM)
+            elif NET == LINEAR_NOHIDDEN:
+                out = net.forward(im,batch_norm = BATCH_NORM)
 
             #print(out)
             #print(label)
@@ -350,7 +353,7 @@ def run_normal(input_csv,output_csv,weight_csv,username,ARTIFICIAL,BATCH_NORM,DA
     
     return
 
-def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,BATCH_NORM,MOMENTUM,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATURE_DIM,QUERY_DIM,REG,LEARNING_RATE,WEIGHT_DECAY,LOSS,ACT,BATCH_SIZE,OPTIMIZER,NET,w_f,w_f_type,VALIDATE_NUMBER,WD,extra_msg):
+def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,BATCH_NORM,MOMENTUM,ARTIFICIAL,DATE,EPOCH,KEY_DIM,FEATURE_DIM,QUERY_DIM,REG,LEARNING_RATE,WEIGHT_DECAY,LOSS,ACT,BATCH_SIZE,OPTIMIZER,NET,w_f,w_f_type,VALIDATE_NUMBER,WD,extra_msg,ATTENTION_REG, ATTENTION_REG_WEIGHT):
         ############### Data Preparation ##############
     extra = "CV_" + str(extra_msg) + str(DATE) + "_Epoch_"+ str(EPOCH) + "_Net_" + str(NET) + "_u_" + str(username) + "_Q_" + str(QUERY_DIM) + "_K_" + str(KEY_DIM) + "_F_" + str(FEATURE_DIM) + "_REG_" + str(REG) + "_ACT_" + str(ACT) + "_WD_" + str(WD) + "w_f" + str(w_f_type)
     #model_path = "/home/li/food/model/" + str(extra) + ".model"
@@ -433,6 +436,10 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,BATCH
         for i in range(K_FOLDER):
             net = Linear_Net(dataset, params = KEY_DIM, activation = ACT)
             net_list.append(net)
+    elif NET == LINEAR_NOHIDDEN:
+        for i in range(K_FOLDER):
+            net = Linear_NoHidden_Net(dataset)
+            net_list.append(net)
             
     ### TEST
     
@@ -507,7 +514,7 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,BATCH
                 if NET == ATTENTION:
                     out,dist_origin = net.forward(im,batch_norm = BATCH_NORM)
                     accurate_number += match_output(out,label.float())
-                elif NET == LINEAR:
+                else:
                     out = net.forward(im,batch_norm = BATCH_NORM)
                     accurate_number += match_output(out,label.float())
 
@@ -534,7 +541,7 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,BATCH
                         out,dist_origin = net.forward(im,batch_norm = BATCH_NORM)
                         accurate_number += match_output(out,label.float())
                         #print(accurate_number)
-                    elif NET == LINEAR:
+                    else:
                         out = net.forward(im,batch_norm = BATCH_NORM)
                         accurate_number += match_output(out,label.float())
                         
@@ -558,12 +565,19 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,BATCH
                     l0_regularization = torch.tensor(0).float()
                     l1_regularization = torch.tensor(0).float()
                     l2_regularization = torch.tensor(0).float()
+                    attention_regularization = torch.tensor(0).float()
 
                     if NET == ATTENTION:
                         out,dist_origin = net.forward(im,batch_norm = BATCH_NORM)
                         #for dist in dist_origin:
                             #dist_list.append(list(dist.detach().numpy()))
-                    elif NET == LINEAR:
+                        if ATTENTION_REG:
+                            for dist in dist_origin:
+                                attention_regularization += ATTENTION_REG_WEIGHT * torch.norm(dist,0.5)
+                                #print(attention_regularization)
+                                
+                            
+                    else:
                         out = net.forward(im,batch_norm = BATCH_NORM)
 
                     org_loss = loss_function(out, torch.max(label,1)[1])
@@ -579,6 +593,9 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,BATCH
                         loss = org_loss + l1_regularization
                     elif REG == L2:
                         loss = org_loss + l2_regularization
+                    
+                    if ATTENTION_REG:
+                        loss = loss + attention_regularization
 
                     optimizer.zero_grad()
                     loss.backward()
@@ -637,7 +654,7 @@ def run_cross_validation(input_csv,output_csv,weight_csv,username,K_FOLDER,BATCH
         plt.close('all')
 
 
-    figure = "Accurate_Rate_Curve"
+    figure = "Accuracy_Curve"
     for k in range(K_FOLDER):
         plt.figure()
         title = "F_" + str(FEATURE_DIM) + "_K_"+ str(KEY_DIM) + "_wf_" + str(w_f) + "_Model_" + str(k)
@@ -779,7 +796,9 @@ def run(input_csv,
         w_f_type = "Eye",
         VALIDATE_NUMBER = 1000,
         WD = "0005",
-        extra_msg = ""
+        extra_msg = "",
+        ATTENTION_REG = False,
+        ATTENTION_REG_WEIGHT = 0.05,
         ):
 
     WEIGHT_DECAY = torch.tensor(WEIGHT_DECAY).float()
@@ -827,6 +846,8 @@ def run(input_csv,
         REG = REG,
         LEARNING_RATE = LEARNING_RATE,
         WEIGHT_DECAY = WEIGHT_DECAY,
+        ATTENTION_REG = ATTENTION_REG,
+        ATTENTION_REG_WEIGHT = ATTENTION_REG_WEIGHT,
         LOSS = LOSS,
         ACT = ACT,
         BATCH_SIZE = BATCH_SIZE,

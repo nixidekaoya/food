@@ -160,7 +160,7 @@ class Linear_Net(nn.Module):
 
         
         self.linear_layer2 = nn.Linear(self.feature_dim, self.output_dim)
-        self.bn2 = nn.BatchNorm2d(self.output_dim)
+        self.bn2 = nn.BatchNorm1d(self.output_dim)
 
         init.xavier_uniform(self.linear_layer1.weight)
         init.xavier_uniform(self.linear_layer2.weight)
@@ -179,6 +179,47 @@ class Linear_Net(nn.Module):
         x = self.linear_layer2(x)
         if batch_norm:
             x = self.bn2(x)
+        exp_x = torch.exp(x)
+        mask_exp_x = exp_x.mul(zero_mask)
+        sum_mask_exp_x = torch.sum(mask_exp_x,1)
+        x = torch.div(mask_exp_x.t(),sum_mask_exp_x).t()
+        return x
+
+
+    def get_zero_mask(self,x):
+        x = x.data.numpy()
+        mask = []
+        for batch in x:
+            sub_mask = []
+            for i in range(self.output_dim):
+                if batch[self.condition_dim + i] == 0:
+                    sub_mask.append(0)
+                else:
+                    sub_mask.append(1)
+            mask.append(sub_mask)
+        mask = torch.from_numpy(np.array(mask)).float()
+        return mask
+    
+class Linear_NoHidden_Net(nn.Module):
+    def __init__(self, dataset):
+        super(Linear_NoHidden_Net,self).__init__()
+        self.dataset = dataset
+        self.input_dim = self.dataset.input_dim
+        self.output_dim = self.dataset.output_dim
+        self.condition_dim = self.input_dim - self.output_dim
+
+        self.linear_layer1 = nn.Linear(self.input_dim, self.output_dim)
+        self.bn1 = nn.BatchNorm1d(self.output_dim)
+
+        init.xavier_uniform(self.linear_layer1.weight)
+        init.normal(self.linear_layer1.bias, mean = 0, std = 1)
+
+    def forward(self,x,batch_norm = False):
+        inp = x
+        zero_mask = self.get_zero_mask(x)
+        x = self.linear_layer1(x)
+        if batch_norm:
+            x = self.bn1(x)
         exp_x = torch.exp(x)
         mask_exp_x = exp_x.mul(zero_mask)
         sum_mask_exp_x = torch.sum(mask_exp_x,1)
